@@ -12,10 +12,14 @@ import WeglotScript from "@/components/WeglotScript";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "DELF VIP | İstanbul VIP Transfer & Özel Seyahat",
-  description: "İstanbul'da lüksün adresi. Mercedes Vito ve S-Class araçlarla havalimanı transfer, şoförlü araç kiralama ve VIP tur hizmetleri.",
+  title: {
+    default: "DELF VIP | İstanbul VIP Transfer & Şoförlü Araç Kiralama",
+    template: "%s | DELF VIP Transfer"
+  },
+  description: "İstanbul Havalimanı (IST) ve Sabiha Gökçen (SAW) için 7/24 lüks VIP transfer hizmeti. Mercedes Vito araçlarla konforlu, güvenli ve sabit fiyatlı yolculuk.",
+  keywords: ["istanbul vip transfer", "sabiha gökçen transfer", "istanbul havalimanı transfer", "şoförlü araç kiralama", "mercedes vito transfer"],
   icons: {
-    icon: "/icon.png",
+    icon: '/favicon.ico', // Logonun küçük hali (public klasöründe olmalı)
   },
 };
 
