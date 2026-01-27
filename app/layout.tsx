@@ -8,6 +8,7 @@ import { Facebook, Instagram, MapPin, Phone } from "lucide-react";
 import { CurrencyProvider } from "@/components/CurrencyContext";
 // YENİ: Oluşturduğumuz bileşeni çağırıyoruz
 import WeglotScript from "@/components/WeglotScript"; 
+import Script from 'next/script';
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -31,6 +32,19 @@ export default function RootLayout({
   return (
     <html lang="tr">
       <body className={`${inter.className} min-h-screen flex flex-col`}>
+        {/* Google Tag (gtag.js) */}
+        <Script
+          strategy="afterInteractive"
+          src="https://www.googletagmanager.com/gtag/js?id=AW-17907386520"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'AW-17907386520');
+          `}
+        </Script>
         
         {/* WEGLOT BURAYA EKLENDİ (Hatayı Çözer) */}
         <WeglotScript />
