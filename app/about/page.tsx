@@ -45,11 +45,11 @@ export default function AboutPage() {
                     <div className="relative h-[500px] w-full rounded-2xl overflow-hidden shadow-lg z-10">
                         {/* --- KRİTİK DÜZELTME BURADA --- */}
                         <Image 
-                            src="https://images.unsplash.com/photo-1600880292089-90a7e086ee0c?q=80&w=1974&auto=format&fit=crop"
+                            src="/hakkimizda.avif"
                             alt="Our Driver"
                             fill
                             className="object-cover"
-                            unoptimized={true} // BU SATIR SAYESİNDE RESİM KESİN GELECEK
+                           unoptimized={true} // BU SATIR SAYESİNDE RESİM KESİN GELECEK
                         />
                     </div>
                     {/* Deneyim Kartı */}

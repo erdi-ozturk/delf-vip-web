@@ -1,6 +1,3 @@
-html {
-  scroll-behavior: smooth;
-}
 @import "tailwindcss";
 
 :root {
@@ -11,15 +8,6 @@ html {
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
@@ -28,18 +16,74 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-
-/* Weglot: Sağ alttaki varsayılan butonu tamamen gizle */
-.weglot-container.wg-default {
-    display: none !important;
+/* --- TIKLAMA ALANI (DOKUNMA) --- */
+.react-datepicker-wrapper,
+.react-datepicker__input-container {
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
 }
 
-/* Navbar'daki Weglot'un ayarları */
-.weglot-nav-item .wg-drop.country-selector {
-    background-color: transparent !important;
+/* --- GOOGLE MAPS LİSTESİ (YENİ AYAR) --- */
+.pac-container {
+    z-index: 99999 !important;
+    border-radius: 16px !important;
+    border: none !important;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15) !important;
+    /* Input artık kutuyu tam kapladığı için margin'i azalttık/ayarladık */
+    margin-top: 4px !important; 
+    font-family: inherit !important;
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
+    /* Listeyi biraz daha geniş göstermek istersen width: 100% burada çalışmaz, JS kontrol eder */
 }
-.weglot-nav-item a {
-    text-decoration: none !important;
-    font-weight: bold;
-    color: #334155 !important;
+
+.pac-item {
+    padding: 12px 20px !important;
+    cursor: pointer !important;
+    border-top: 1px solid #f1f5f9 !important;
+    display: flex !important;
+    align-items: center !important;
+    font-size: 14px !important;
+    color: #64748b !important;
+    line-height: 1.5 !important;
 }
+.pac-item:first-child { border-top: none !important; }
+.pac-item:hover { background-color: #fffbeb !important; border-color: transparent !important; }
+.pac-item-query { font-size: 15px !important; font-weight: 700 !important; color: #0f172a !important; margin-right: 8px !important; }
+.pac-icon { display: none !important; }
+.pac-logo:after { display: none !important; }
+
+/* --- TAKVİM (BOOKING TARZI) --- */
+.react-datepicker-popper { z-index: 99999 !important; padding-top: 12px !important; }
+.react-datepicker {
+    font-family: inherit !important; background-color: white !important;
+    border: none !important; border-radius: 16px !important;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2) !important;
+    display: flex !important; overflow: hidden !important;
+    border: 1px solid #e2e8f0 !important;
+}
+.react-datepicker__header { background-color: white !important; border-bottom: 1px solid #f1f5f9 !important; padding-top: 15px !important; }
+.react-datepicker__current-month { color: #0f172a !important; font-weight: 800 !important; text-transform: uppercase; font-size: 0.95rem !important; margin-bottom: 10px !important; }
+.react-datepicker__day-name { color: #94a3b8 !important; font-weight: 700 !important; width: 2.2rem !important; }
+.react-datepicker__day { width: 2.2rem !important; line-height: 2.2rem !important; margin: 2px !important; border-radius: 50% !important; font-weight: 600 !important; color: #334155 !important; font-size: 0.9rem !important; }
+.react-datepicker__day:hover { background-color: #fffbeb !important; color: #d97706 !important; }
+.react-datepicker__day--selected, .react-datepicker__day--keyboard-selected { background-color: #f59e0b !important; color: white !important; font-weight: bold !important; }
+.react-datepicker__day--today { font-weight: 900 !important; color: #f59e0b !important; background: transparent !important; border: 2px solid #fcd34d !important; }
+.react-datepicker__day--today.react-datepicker__day--selected { background-color: #f59e0b !important; color: white !important; border: none !important; }
+
+/* SAAT LİSTESİ */
+.react-datepicker__time-container { width: 100px !important; border-left: 1px solid #f1f5f9 !important; }
+.react-datepicker--time-only .react-datepicker__time-container { width: 140px !important; border-left: none !important; }
+.react-datepicker__header--time { display: block !important; padding-top: 15px !important; padding-bottom: 10px !important; background-color: white !important; border-bottom: 1px solid #f1f5f9 !important; }
+.react-datepicker-time__header { color: #0f172a !important; font-weight: 800 !important; font-size: 0.8rem !important; text-transform: uppercase; }
+.react-datepicker__time-container .react-datepicker__time { height: 240px !important; background: white !important; border-radius: 0 0 16px 16px !important; }
+.react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box { width: 100% !important; height: 100% !important; border-radius: 0 !important; }
+.react-datepicker__time-list-item { height: 36px !important; display: flex !important; align-items: center !important; justify-content: center !important; font-weight: 600 !important; color: #475569 !important; font-size: 0.9rem !important; transition: all 0.2s ease !important; }
+.react-datepicker__time-list-item:hover { background-color: #fffbeb !important; color: #d97706 !important; }
+.react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box ul.react-datepicker__time-list li.react-datepicker__time-list-item--selected { background-color: #f59e0b !important; color: white !important; font-weight: bold !important; }
+.react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box::-webkit-scrollbar { width: 4px; }
+.react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 4px; }
+.react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box::-webkit-scrollbar-track { background: transparent; }
+
+.weglot-container, .wg-default { display: none !important; }

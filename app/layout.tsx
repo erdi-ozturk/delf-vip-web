@@ -5,10 +5,13 @@ import Navbar from "@/components/Navbar";
 import Image from "next/image";
 import Link from "next/link";
 import { Facebook, Instagram, MapPin, Phone } from "lucide-react";
-import { CurrencyProvider } from "@/components/CurrencyContext";
-// YENİ: Oluşturduğumuz bileşeni çağırıyoruz
+
 import WeglotScript from "@/components/WeglotScript"; 
 import Script from 'next/script';
+
+// 🔥 Google Analytics bileşenini import ettik
+import { GoogleAnalytics } from '@next/third-parties/google' 
+import { LanguageProvider } from "@/components/LanguageContext"; 
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -20,7 +23,7 @@ export const metadata: Metadata = {
   description: "İstanbul Havalimanı (IST) ve Sabiha Gökçen (SAW) için 7/24 lüks VIP transfer hizmeti. Mercedes Vito araçlarla konforlu, güvenli ve sabit fiyatlı yolculuk.",
   keywords: ["istanbul vip transfer", "sabiha gökçen transfer", "istanbul havalimanı transfer", "şoförlü araç kiralama", "mercedes vito transfer"],
   icons: {
-    icon: '/favicon.ico', // Logonun küçük hali (public klasöründe olmalı)
+    icon: '/logo2.png',
   },
 };
 
@@ -32,7 +35,8 @@ export default function RootLayout({
   return (
     <html lang="tr">
       <body className={`${inter.className} min-h-screen flex flex-col`}>
-        {/* Google Tag (gtag.js) */}
+        
+        {/* Google Tag (gtag.js) - Mevcut olanlar kalıyor */}
         <Script
           strategy="afterInteractive"
           src="https://www.googletagmanager.com/gtag/js?id=AW-17907386520"
@@ -46,14 +50,20 @@ export default function RootLayout({
           `}
         </Script>
         
-        {/* WEGLOT BURAYA EKLENDİ (Hatayı Çözer) */}
+        {/* WEGLOT SCRIPT */}
         <WeglotScript />
 
-        <CurrencyProvider>
+        {/* GOOGLE MAPS SCRIPT */}
+        <Script
+          id="google-maps"
+          src={`https://maps.googleapis.com/maps/api/js?key=AIzaSyDHBoh7e83CUbW4_B72nJM0CHhQ712m8Pw&libraries=places&loading=async`}
+          strategy="beforeInteractive"
+        />
+
+        <LanguageProvider>
           
           <Navbar />
 
-          {/* Sayfa İçerikleri */}
           {children}
 
           {/* --- FOOTER --- */}
@@ -144,13 +154,13 @@ export default function RootLayout({
                 
                 <div className="flex gap-3">
                   <div className="bg-white px-2 py-1 rounded w-10 h-6 flex items-center justify-center shadow-sm">
-                     <span className="text-[8px] font-bold text-blue-800 italic">VISA</span>
+                      <span className="text-[8px] font-bold text-blue-800 italic">VISA</span>
                   </div>
                   <div className="bg-white px-2 py-1 rounded w-10 h-6 flex items-center justify-center shadow-sm">
-                     <div className="flex -space-x-1">
-                       <div className="w-3 h-3 rounded-full bg-red-500 opacity-80"></div>
-                       <div className="w-3 h-3 rounded-full bg-yellow-500 opacity-80"></div>
-                     </div>
+                      <div className="flex -space-x-1">
+                        <div className="w-3 h-3 rounded-full bg-red-500 opacity-80"></div>
+                        <div className="w-3 h-3 rounded-full bg-yellow-500 opacity-80"></div>
+                      </div>
                   </div>
                 </div>
               </div>
@@ -158,7 +168,11 @@ export default function RootLayout({
             </div>
           </footer>
 
-        </CurrencyProvider>
+        </LanguageProvider>
+
+        {/* 🔥 GOOGLE ANALYTICS BURAYA EKLENDİ */}
+        {/* 'G-XXXXXXXXXX' kısmını kendi numaranla değiştirmeyi unutma! */}
+        <GoogleAnalytics gaId="G-Z72VL1M3MX" />
 
       </body>
     </html>

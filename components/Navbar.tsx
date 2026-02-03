@@ -1,33 +1,20 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { Menu, X, Globe, ChevronDown, Phone } from "lucide-react"
-import { useCurrency } from "@/components/CurrencyContext"
+import { Menu, X, Phone } from "lucide-react"
+import LanguageSwitcher from "./LanguageSwitcher";
 
 export default function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const [isCurrencyOpen, setIsCurrencyOpen] = useState(false)
-  const currencyRef = useRef<HTMLDivElement>(null)
 
-  const { currency, setCurrency } = useCurrency()
-
+  // Mobil menü açılınca arkaplan kaydırmayı durdur
   useEffect(() => {
     if (isMobileMenuOpen) document.body.style.overflow = 'hidden'
     else document.body.style.overflow = 'unset'
     return () => { document.body.style.overflow = 'unset' }
   }, [isMobileMenuOpen])
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (currencyRef.current && !currencyRef.current.contains(event.target as Node)) {
-        setIsCurrencyOpen(false)
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside)
-    return () => document.removeEventListener("mousedown", handleClickOutside)
-  }, [])
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -61,41 +48,8 @@ export default function Navbar() {
             </nav>
 
             <div className="flex items-center gap-3">
-              
-              {/* YENİ: Weglot Buraya Gelecek (Masaüstü İçin) */}
-              {/* min-w ekledik ki kutu kapanmasın */}
-              <div id="weglot_here" className="weglot-nav-item min-w-[60px] flex items-center justify-center"></div>
-
-              {/* Para Birimi */}
-              <div className="relative" ref={currencyRef}>
-                <button 
-                    onClick={() => setIsCurrencyOpen(!isCurrencyOpen)}
-                    className="flex items-center gap-1 text-sm font-bold text-slate-700 hover:text-amber-600 bg-gray-100 px-3 py-2 rounded-lg transition-colors border border-transparent hover:border-amber-200"
-                >
-                    <Globe size={16} /> {currency} <ChevronDown size={14} className={`transition-transform ${isCurrencyOpen ? 'rotate-180' : ''}`}/>
-                </button>
-                
-                {isCurrencyOpen && (
-                    <div className="absolute top-full right-0 mt-2 w-32 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden p-1 z-[60] animate-in fade-in slide-in-from-top-2">
-                        <button onClick={() => { setCurrency('EUR'); setIsCurrencyOpen(false); }} className={`w-full text-left px-4 py-3 text-sm font-bold hover:bg-amber-50 rounded-lg flex items-center justify-between ${currency === 'EUR' ? 'text-amber-600 bg-amber-50' : 'text-slate-600'}`}>
-                            <span>€ EUR</span>
-                        </button>
-                        <button onClick={() => { setCurrency('USD'); setIsCurrencyOpen(false); }} className={`w-full text-left px-4 py-3 text-sm font-bold hover:bg-amber-50 rounded-lg flex items-center justify-between ${currency === 'USD' ? 'text-amber-600 bg-amber-50' : 'text-slate-600'}`}>
-                            <span>$ USD</span>
-                        </button>
-                        <button onClick={() => { setCurrency('TRY'); setIsCurrencyOpen(false); }} className={`w-full text-left px-4 py-3 text-sm font-bold hover:bg-amber-50 rounded-lg flex items-center justify-between ${currency === 'TRY' ? 'text-amber-600 bg-amber-50' : 'text-slate-600'}`}>
-                            <span>₺ TRY</span>
-                        </button>
-                    </div>
-                )}
-              </div>
-
-              <Link 
-                href="/booking" 
-                className="bg-slate-900 text-white px-5 py-2.5 rounded-full font-bold text-sm shadow-lg hover:bg-slate-800 hover:shadow-amber-500/20 transition-all flex items-center gap-2"
-              >
-                Rezervasyon
-              </Link>
+              {/* Dil Seçici */}
+              <LanguageSwitcher />
             </div>
           </div>
 
@@ -130,17 +84,12 @@ export default function Navbar() {
                 <Link href="/contact" onClick={() => setIsMobileMenuOpen(false)} className="py-2 hover:text-amber-600">İletişim</Link>
                 </nav>
 
-                {/* YENİ: Weglot Buraya Gelecek (Mobil İçin) */}
-                <div id="weglot_mobile_here" className="min-h-[40px] flex justify-center items-center"></div>
-
-                <div className="flex gap-2 justify-center w-full border-t border-gray-100 pt-6">
-                    <button onClick={() => setCurrency('EUR')} className={`px-4 py-2 rounded-lg font-bold border transition-colors ${currency === 'EUR' ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-900 border-gray-200'}`}>€ EUR</button>
-                    <button onClick={() => setCurrency('USD')} className={`px-4 py-2 rounded-lg font-bold border transition-colors ${currency === 'USD' ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-900 border-gray-200'}`}>$ USD</button>
-                    <button onClick={() => setCurrency('TRY')} className={`px-4 py-2 rounded-lg font-bold border transition-colors ${currency === 'TRY' ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-900 border-gray-200'}`}>₺ TRY</button>
+                {/* Mobil Dil Seçici */}
+                <div className="flex justify-center items-center py-2">
+                  <LanguageSwitcher />
                 </div>
 
                 <div className="flex flex-col gap-4 w-full mt-4">
-                  <Link href="/booking" onClick={() => setIsMobileMenuOpen(false)} className="bg-slate-900 text-white py-4 rounded-xl font-bold text-center shadow-lg">Rezervasyon Yap</Link>
                   <Link href="https://wa.me/905441459199" target="_blank" onClick={() => setIsMobileMenuOpen(false)} className="bg-gradient-to-r from-amber-500 to-yellow-600 text-white py-4 rounded-xl font-bold text-center shadow-lg">WhatsApp Destek</Link>
                 </div>
             </div>
@@ -148,7 +97,7 @@ export default function Navbar() {
         )}
       </header>
 
-      {/* WhatsApp Butonu (Artık altında bir şey kalmadı) */}
+      {/* WhatsApp Butonu */}
       <Link
         href="https://wa.me/905441459199"
         target="_blank"

@@ -10,42 +10,42 @@ export default function ServicesPage() {
       title: "Havalimanı VIP Transfer",
       description: "İstanbul Havalimanı ve Sabiha Gökçen'den otelinize veya evinize, uçuşunuzu takip ederek tam zamanında karşılama.",
       icon: Plane,
-      image: "https://images.unsplash.com/photo-1570125909232-eb263c188f7e?q=80&w=2071&auto=format&fit=crop"
+      image: "/images/cars/istanbul-airpot-shuttle-transfer-tour.png"
     },
     {
       id: 2,
       title: "Şehirlerarası Transfer",
       description: "İstanbul'dan Bursa, Sapanca, Antalya, Bodrum gibi şehirlere lüks araçlarımızla konforlu ve güvenli yolculuk.",
       icon: Map,
-      image: "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?q=80&w=2021&auto=format&fit=crop"
+      image: "/images/cars/istanbul-vip-transfer-tour.png"
     },
     {
       id: 3,
       title: "Saatlik & Günlük Tahsis",
       description: "Özel şoförünüzle birlikte aracınızı saatlik veya günlük kiralayın. Siz toplantıdayken şoförünüz sizi beklesin.",
       icon: Clock,
-      image: "https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?q=80&w=2070&auto=format&fit=crop"
+      image: "/images/cars/istanbul-tour-shuttle-vip-transfer.png"
     },
     {
       id: 4,
       title: "Kurumsal & İş Gezileri",
       description: "Misafirleriniz veya yöneticileriniz için prestijli ulaşım çözümleri. Fatura ve kurumsal ödeme kolaylığı.",
       icon: Briefcase,
-      image: "https://images.unsplash.com/photo-1556761175-5973dc0f32e7?q=80&w=2032&auto=format&fit=crop"
+      image: "/images/tours/kurumsal-gezi.webp"
     },
     {
       id: 5,
       title: "Gelin Arabası & Düğün",
       description: "En özel gününüzde Mercedes Vito VIP araçlarımızla, süsleme seçenekleriyle hizmetinizdeyiz.",
       icon: Star,
-      image: "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=2070&auto=format&fit=crop"
+      image: "/images/cars/gelin-arabasi.webp"
     },
     {
       id: 6,
       title: "Özel Şehir Turları",
       description: "İstanbul'un tarihi ve turistik yerlerini, bilen bir şoför eşliğinde ailenizle keşfedin.",
       icon: MapPin,
-      image: "https://images.unsplash.com/photo-1524231757912-21f4fe3a7200?q=80&w=2071&auto=format&fit=crop"
+      image: "/images/tours/istanbul-city-tour-transfer.webp"
     }
   ]
 
@@ -56,12 +56,7 @@ export default function ServicesPage() {
       <section className="relative h-[400px] flex items-center justify-center bg-slate-900 overflow-hidden">
         {/* Arka Plan Deseni */}
         <div className="absolute inset-0 opacity-20">
-            <Image 
-                src="https://images.unsplash.com/photo-1620300436447-b847a9f77f72?q=80&w=1000&auto=format&fit=crop"
-                alt="Services Background"
-                fill
-                className="object-cover"
-            />
+            
         </div>
         <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/80 to-slate-900/50"></div>
 

@@ -1,177 +1,447 @@
 "use client"
-
+import { sendGAEvent } from '@next/third-parties/google'
 import { useSearchParams, useRouter } from "next/navigation"
+import { useState, useEffect, useRef } from "react"
 import Image from "next/image"
-import { Users, Briefcase, CheckCircle2, Star, ShieldCheck, ArrowRight, MapPin, Calendar, Info, AlertCircle } from "lucide-react"
-import { useCurrency } from "@/components/CurrencyContext"
+import { 
+  Users, Briefcase, ArrowRight, MapPin, Calendar, 
+  Lock, Plane, HandMetal, ThumbsUp, Star, Loader2, 
+  Edit2, ArrowRightLeft, X, Search, History, AlertCircle, Clock 
+} from "lucide-react"
+import DatePicker from "react-datepicker"; 
+import "react-datepicker/dist/react-datepicker.css";
+import { tr } from 'date-fns/locale';
+
+declare global {
+  interface Window {
+    google: any;
+  }
+}
+
+const vehicles = [
+  { id: 1, name: "Mercedes-Benz Vito VIP", type: "Premium Minivan", image: "/vehicles/vito.png", capacity: "6", luggage: "6", basePriceUsd: 55, badge: "En Çok Tercih Edilen" },
+  { id: 2, name: "Mercedes-Benz Sprinter", type: "Large Group Van", image: "/vehicles/sprinter.png", capacity: "16", luggage: "12", basePriceUsd: 110, badge: "" },
+  { id: 3, name: "S-Class Maybach", type: "Luxury Sedan", image: "/vehicles/sclass.png", capacity: "3", luggage: "2", basePriceUsd: 275, badge: "Lüks Seçim" }
+]
+
+const formatDisplayDate = (dateString: string | null) => {
+  if (!dateString) return "Seçilmedi";
+  const date = new Date(dateString);
+  if (!isNaN(date.getTime())) {
+     return new Intl.DateTimeFormat('tr-TR', {
+      day: 'numeric', month: 'long', year: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    }).format(date);
+  }
+  return dateString;
+}
 
 export default function BookingSelectionPage() {
   const searchParams = useSearchParams()
   const router = useRouter()
 
-  const from = searchParams.get("from") || "Konum Belirtilmedi"
-  const to = searchParams.get("to") || "Konum Belirtilmedi"
-  const date = searchParams.get("date") || "Tarih Seçilmedi"
-  const time = searchParams.get("time") || ""
-  const passengers = searchParams.get("passengers") || "1"
-  const type = searchParams.get("type") || "tek-yon"
+  const bookingType = searchParams.get("type") || "transfer"; 
+  const initialDuration = searchParams.get("duration") || "4 Saat";
+  const pickupAddr = searchParams.get("pickup") || "Konum Belirtilmedi";
+  const pickupName = searchParams.get("pickupName") || pickupAddr;
+  const dropoffAddr = searchParams.get("dropoff") || "Konum Belirtilmedi";
+  const dropoffName = searchParams.get("dropoffName") || dropoffAddr;
 
-  const { convertPrice } = useCurrency()
+  const [from, setFrom] = useState(pickupName === "Konum Belirtilmedi" ? "" : pickupName);
+  const [to, setTo] = useState(dropoffName === "Konum Belirtilmedi" ? "" : dropoffName);
+  const [fromFullAddress, setFromFullAddress] = useState(pickupAddr);
+  const [toFullAddress, setToFullAddress] = useState(dropoffAddr);
+  const [duration, setDuration] = useState(initialDuration);
+  const [isFromValid, setIsFromValid] = useState(pickupName !== "Konum Belirtilmedi");
+  const [isToValid, setIsToValid] = useState(dropoffName !== "Konum Belirtilmedi");
+  const [date, setDate] = useState<Date | null>(searchParams.get("date") ? new Date(searchParams.get("date")!) : null);
+  const [returnDate, setReturnDate] = useState<Date | null>(searchParams.get("returnDate") ? new Date(searchParams.get("returnDate")!) : null);
+  const [passengers, setPassengers] = useState(searchParams.get("passengers") || "1");
+  const [isRoundTrip, setIsRoundTrip] = useState(searchParams.get("roundTrip") === "true");
+  const [isEditing, setIsEditing] = useState(false); 
+  const [isLoading, setIsLoading] = useState(true);
+  const [rates, setRates] = useState({ USD: 1, EUR: 0.92, TRY: 35, GBP: 0.79 });
+  const [formMessage, setFormMessage] = useState<string | null>(null);
+  const [errors, setErrors] = useState({ from: false, to: false, date: false, returnDate: false });
 
-  // ARAÇ LİSTESİ (FİYATLAR ARTIK DOLAR BAZLI)
-  const vehicles = [
-    {
-      id: 1,
-      name: "Mercedes-Benz Vito VIP",
-      type: "Premium Minivan",
-      image: "/vehicles/vito.png", 
-      capacity: "6",
-      luggage: "6",
-      priceUsd: 50, // 55 Dolar
-      badge: "En Çok Tercih Edilen",
-      features: ["Ücretsiz Wifi", "Deri Koltuk", "Klima", "Su & Atıştırmalık", "Bluetooth"]
-    },
-    {
-      id: 2,
-      name: "Mercedes-Benz Sprinter",
-      type: "Large Group Van",
-      image: "/vehicles/sprinter.png",
-      capacity: "16",
-      luggage: "12",
-      priceUsd: 150, // 110 Dolar
-      badge: "",
-      features: ["Geniş İç Hacim", "TV Ünitesi", "Buzdolabı", "USB Şarj", "Yatar Koltuk"]
-    },
-    {
-      id: 3,
-      name: "S-Class Maybach",
-      type: "Luxury Sedan",
-      image: "/vehicles/sclass.png",
-      capacity: "3",
-      luggage: "2",
-      priceUsd: 270, // 275 Dolar
-      badge: "Lüks Seçim",
-      features: ["Masajlı Koltuk", "Şampanya İkramı", "Özel Şoför", "Gizlilik Camı"]
+  const [isStartTimeMode, setIsStartTimeMode] = useState(false);
+  const [isReturnTimeMode, setIsReturnTimeMode] = useState(false);
+
+  const isDataReady = !isEditing && isFromValid && isToValid && from && to && date !== null && (isRoundTrip ? returnDate !== null : true);
+
+  const pickupInputRef = useRef<HTMLInputElement>(null);
+  const dropoffInputRef = useRef<HTMLInputElement>(null);
+  const startDatePickerRef = useRef<any>(null);
+  const returnDatePickerRef = useRef<any>(null);
+
+  useEffect(() => {
+    async function fetchRates() {
+      try {
+        const res = await fetch('https://api.frankfurter.app/latest?from=USD&to=TRY,EUR,GBP');
+        const data = await res.json();
+        if (data && data.rates) {
+          setRates({ USD: 1, TRY: data.rates.TRY * 1.02, EUR: data.rates.EUR * 1.02, GBP: data.rates.GBP * 1.02 });
+        }
+      } catch (e) { console.error(e); } finally { setIsLoading(false); }
     }
-  ]
+    fetchRates();
+  }, []);
+
+  useEffect(() => {
+    if (!isEditing) return;
+    const waitForGoogle = setInterval(() => {
+        if (window.google && window.google.maps && window.google.maps.places) {
+            clearInterval(waitForGoogle);
+            initAutocomplete();
+        }
+    }, 100);
+    const initAutocomplete = () => {
+      const options = { componentRestrictions: { country: "tr" } };
+      if (pickupInputRef.current) {
+         const fromAutocomplete = new window.google.maps.places.Autocomplete(pickupInputRef.current, options);
+         fromAutocomplete.addListener("place_changed", () => {
+            const place = fromAutocomplete.getPlace();
+            if (!place.geometry) { setIsFromValid(false); return; }
+            setFrom(place.name || place.formatted_address);
+            setFromFullAddress(place.formatted_address || ""); 
+            setIsFromValid(true); setErrors(prev => ({...prev, from: false}));
+         });
+      }
+      if (dropoffInputRef.current) {
+         const toAutocomplete = new window.google.maps.places.Autocomplete(dropoffInputRef.current, options);
+         toAutocomplete.addListener("place_changed", () => {
+            const place = toAutocomplete.getPlace();
+            if (!place.geometry) { setIsToValid(false); return; }
+            setTo(place.name || place.formatted_address);
+            setToFullAddress(place.formatted_address || "");
+            setIsToValid(true); setErrors(prev => ({...prev, to: false}));
+         });
+      }
+    };
+    return () => clearInterval(waitForGoogle);
+  }, [isEditing]);
+
+  const handleStartSelect = (d: Date | null) => {
+    if (!d) return;
+    setErrors(prev => ({...prev, date: false}));
+    if (!isStartTimeMode) {
+      setDate(d);
+      setIsStartTimeMode(true);
+    } else {
+      setDate(d);
+      setIsStartTimeMode(false);
+      startDatePickerRef.current?.setOpen(false);
+    }
+  };
+
+  const handleReturnSelect = (d: Date | null) => {
+    if (!d) return;
+    setErrors(prev => ({...prev, returnDate: false}));
+    if (!isReturnTimeMode) {
+      setReturnDate(d);
+      setIsReturnTimeMode(true);
+    } else {
+      setReturnDate(d);
+      setIsReturnTimeMode(false);
+      returnDatePickerRef.current?.setOpen(false);
+    }
+  };
+
+  const handleUpdateSearch = () => {
+    let newErrors = {
+        from: !from || from.trim() === "" || from === "Konum Belirtilmedi",
+        to: !to || to.trim() === "" || to === "Konum Belirtilmedi",
+        date: !date,
+        returnDate: (bookingType === 'transfer' && isRoundTrip) ? !returnDate : false
+    };
+    if (!isFromValid) newErrors.from = true;
+    if (!isToValid) newErrors.to = true;
+    setErrors(newErrors);
+    if (Object.values(newErrors).some(Boolean)) {
+        setFormMessage("Lütfen konumları ve tarihleri eksik alanları doldurunuz.");
+        return; 
+    }
+    setFormMessage(null);
+    setIsEditing(false); 
+    const params = new URLSearchParams();
+    params.set("type", bookingType);
+    params.set("pickup", fromFullAddress || from);
+    params.set("pickupName", from); 
+    params.set("dropoff", toFullAddress || to);
+    params.set("dropoffName", to);
+    if (bookingType === 'transfer') {
+        params.set("roundTrip", isRoundTrip ? "true" : "false");
+        if (isRoundTrip && returnDate) params.set("returnDate", returnDate.toISOString());
+    } else { params.set("duration", duration); }
+    if (date) params.set("date", date.toISOString());
+    params.set("passengers", passengers);
+    router.push(`/booking?${params.toString()}`);
+  };
+
+  const toggleEditing = () => {
+    if (!isEditing) {
+      sendGAEvent({ event: 'edit_search_clicked' });
+    }
+    setIsEditing(!isEditing);
+  };
 
   const handleSelect = (vehicleName: string, finalPrice: string) => {
-    const params = new URLSearchParams({
-      from, to, date, time,
-      vehicle: vehicleName,
-      price: finalPrice 
-    }).toString()
-    
-    router.push(`/checkout?${params}`)
+    sendGAEvent({ event: 'vehicle_selected', value: vehicleName, price: finalPrice });
+
+    if (!isDataReady) {
+        setErrors({
+            from: !isFromValid || !from || from === "Konum Belirtilmedi",
+            to: !isToValid || !to || to === "Konum Belirtilmedi",
+            date: !date,
+            returnDate: (bookingType === 'transfer' && isRoundTrip) ? !returnDate : false
+        });
+        setFormMessage("Lütfen tüm alanları geçerli şekilde doldurunuz.");
+        setIsEditing(true);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return; 
+    }
+    const params = new URLSearchParams({ 
+        type: bookingType, pickup: fromFullAddress || from, pickupName: from, 
+        dropoff: toFullAddress || to, dropoffName: to,
+        date: date ? date.toISOString() : "", vehicle: vehicleName, price: finalPrice, passengers: passengers
+    });
+    if (bookingType === 'hourly') params.set("duration", duration);
+    if (bookingType === 'transfer' && isRoundTrip && returnDate) params.set("returnDate", returnDate.toISOString());
+    params.set("roundTrip", isRoundTrip ? "true" : "false");
+    router.push(`/checkout?${params.toString()}`)
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
-      
+    <div className="min-h-screen bg-gray-50 pb-20 font-sans">
       <div className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
-        <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between md:justify-center md:gap-12 text-sm font-medium">
-            <div className="flex items-center gap-2 text-gray-400">
-                <span className="w-6 h-6 rounded-full border flex items-center justify-center">1</span>
-                <span className="hidden md:inline">Arama</span>
-            </div>
+        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-center gap-12 text-sm font-medium">
+            <div className="flex items-center gap-2 text-gray-400"><span className="w-6 h-6 rounded-full border flex items-center justify-center">1</span><span className="hidden md:inline">Arama</span></div>
             <div className="w-8 h-[1px] bg-gray-300 hidden md:block"></div>
-            <div className="flex items-center gap-2 text-amber-600">
-                <span className="w-6 h-6 rounded-full bg-amber-100 border border-amber-600 flex items-center justify-center">2</span>
-                <span>Araç Seçimi</span>
-            </div>
+            <div className="flex items-center gap-2 text-amber-600 font-bold"><span className="w-6 h-6 rounded-full bg-amber-100 border border-amber-600 flex items-center justify-center text-amber-700">2</span><span>Araç Seçimi</span></div>
             <div className="w-8 h-[1px] bg-gray-300 hidden md:block"></div>
-            <div className="flex items-center gap-2 text-gray-400">
-                <span className="w-6 h-6 rounded-full border flex items-center justify-center">3</span>
-                <span className="hidden md:inline">Ödeme & Onay</span>
-            </div>
+            <div className="flex items-center gap-2 text-gray-400"><span className="w-6 h-6 rounded-full border flex items-center justify-center">3</span><span className="hidden md:inline">Ödeme</span></div>
         </div>
       </div>
 
-      <div className="bg-slate-900 text-white py-8">
-        <div className="max-w-5xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-4 w-full md:w-auto overflow-hidden">
-                <div className="bg-white/10 p-3 rounded-lg backdrop-blur-sm shrink-0">
-                    <MapPin className="text-amber-400" />
+      <div className="max-w-7xl mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+        
+        <div className="lg:col-span-1 lg:mt-14 order-1 lg:order-2"> 
+            <div className="bg-white rounded-2xl shadow-lg border border-gray-200 sticky lg:top-24 overflow-visible">
+                <div className="bg-gray-50 px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+                    <h3 className="font-bold text-lg text-slate-900">Rezervasyon</h3>
+                    <button onClick={toggleEditing} className={`text-sm font-bold flex items-center gap-1 ${isEditing ? 'text-red-500' : 'text-amber-600'}`}>
+                        {isEditing ? <><X size={16}/> İptal</> : <><Edit2 size={14} /> Düzenle</>}
+                    </button>
                 </div>
-                <div className="flex flex-col min-w-0">
-                    <div className="flex items-center gap-2 text-sm text-gray-400 mb-1">
-                        <span>Başlangıç & Varış</span>
-                    </div>
-                    <div className="font-semibold text-lg flex items-center gap-2 flex-wrap">
-                        <span>{from}</span>
-                        <ArrowRight size={16} className="text-amber-500 shrink-0"/>
-                        <span>{to}</span>
-                    </div>
-                </div>
-            </div>
 
-            <div className="flex items-center gap-6 bg-white/10 px-6 py-3 rounded-xl backdrop-blur-sm border border-white/10 shrink-0">
-                <div className="flex items-center gap-2">
-                    <Calendar size={18} className="text-amber-400"/>
-                    <span className="font-medium">{date}</span>
-                </div>
-            </div>
-        </div>
-      </div>
-
-      <div className="max-w-5xl mx-auto px-4 mt-8">
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6 flex items-start gap-3">
-            <AlertCircle className="text-blue-600 shrink-0 mt-0.5" size={20} />
-            <p className="text-sm text-blue-800">
-                <span className="font-bold">Bilgilendirme:</span> Listelenen fiyatlar <span className="font-bold underline">İstanbul içi başlangıç fiyatlarıdır</span>. 
-                Mesafenize ve güzergahınıza göre net fiyat, rezervasyon onayı sırasında WhatsApp üzerinden iletilecektir.
-            </p>
-        </div>
-
-        <h2 className="text-2xl font-bold text-slate-900 mb-6 px-2">Size Uygun Araçlar</h2>
-
-        <div className="space-y-6">
-            {vehicles.map((v) => {
-                
-                let calculatedBasePrice = v.priceUsd
-                if (type === "gidis-donus") {
-                    calculatedBasePrice = calculatedBasePrice * 2
-                }
-                
-                // Kura Çevir (Dolar'dan Seçilene)
-                const { price, symbol } = convertPrice(calculatedBasePrice)
-
-                return (
-                    <div key={v.id} className="group bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-xl hover:border-amber-300 transition-all duration-300 relative">
-                        {v.badge && (
-                            <div className="absolute top-0 left-0 bg-gradient-to-r from-amber-500 to-yellow-600 text-white text-xs font-bold px-4 py-1.5 rounded-br-xl z-10 shadow-sm flex items-center gap-1">
-                                <Star size={12} fill="white" /> {v.badge}
-                            </div>
-                        )}
-                        <div className="flex flex-col md:flex-row">
-                            <div className="md:w-2/5 relative h-64 md:h-auto bg-gradient-to-br from-gray-50 to-gray-200 p-6 flex items-center justify-center">
-                                <Image src={v.image} alt={v.name} fill className="object-contain drop-shadow-xl group-hover:scale-105 transition-transform duration-700" unoptimized={true} />
-                            </div>
-                            <div className="p-6 md:w-2/5 flex flex-col justify-center border-b md:border-b-0 md:border-r border-gray-100">
-                                <div className="mb-1 text-xs font-bold text-amber-600 uppercase tracking-wide">{v.type}</div>
-                                <h3 className="text-2xl font-bold text-slate-900 mb-4">{v.name}</h3>
-                                <div className="flex gap-4 mb-6">
-                                    <div className="flex items-center gap-1.5 bg-gray-50 px-3 py-1.5 rounded-lg text-sm text-gray-600 border border-gray-100"><Users size={16} className="text-gray-400"/><span className="font-semibold">{v.capacity}</span> Yolcu</div>
-                                    <div className="flex items-center gap-1.5 bg-gray-50 px-3 py-1.5 rounded-lg text-sm text-gray-600 border border-gray-100"><Briefcase size={16} className="text-gray-400"/><span className="font-semibold">{v.luggage}</span> Valiz</div>
+                <div className="p-6">
+                    {isEditing ? (
+                        <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                            {formMessage && (
+                                <div className="bg-red-50 border border-red-100 rounded-xl p-3 flex items-start gap-2 animate-pulse">
+                                    <AlertCircle size={18} className="text-red-600 mt-0.5 shrink-0" /><p className="text-xs font-bold text-red-600 leading-tight">{formMessage}</p>
                                 </div>
-                                <div className="grid grid-cols-2 gap-y-2 gap-x-4">
-                                    {v.features.map((f, i) => (<div key={i} className="flex items-center gap-2 text-xs text-gray-500"><CheckCircle2 size={14} className="text-amber-500 shrink-0"/> {f}</div>))}
-                                </div>
+                            )}
+                            <div className="relative group">
+                                <MapPin className={`absolute left-3 top-3.5 ${errors.from ? 'text-red-500' : 'text-green-600'}`} size={18} />
+                                <div className={`absolute left-9 top-1.5 text-[9px] font-bold uppercase ${errors.from ? 'text-red-400' : 'text-gray-400'}`}>NEREDEN</div>
+                                <input ref={pickupInputRef} type="text" defaultValue={from} onChange={(e) => { setFrom(e.target.value); setIsFromValid(false); if(e.target.value) setErrors(p => ({...p, from: false})); }} className={`w-full pl-9 pt-4 pb-2 text-sm font-bold text-slate-900 border rounded-xl outline-none transition-all ${errors.from ? 'border-red-500 bg-red-50' : 'border-gray-200 focus:border-amber-500'}`} placeholder="Konum seçiniz" />
                             </div>
-                            <div className="p-6 md:w-1/5 bg-gray-50/50 flex flex-col justify-center items-center text-center">
-                                <div className="text-xs text-gray-400 mb-1 uppercase tracking-wider font-bold">
-                                    {type === "gidis-donus" ? "Gidiş - Dönüş" : "Başlangıç Fiyatı"}
+
+                            <div className="relative group">
+                                <MapPin className={`absolute left-3 top-3.5 ${errors.to ? 'text-red-500' : 'text-blue-600'}`} size={18} />
+                                <div className={`absolute left-9 top-1.5 text-[9px] font-bold uppercase ${errors.to ? 'text-red-400' : 'text-gray-400'}`}>NEREYE</div>
+                                <input ref={dropoffInputRef} type="text" defaultValue={to} onChange={(e) => { setTo(e.target.value); setIsToValid(false); if(e.target.value) setErrors(p => ({...p, to: false})); }} className={`w-full pl-9 pt-4 pb-2 text-sm font-bold text-slate-900 border rounded-xl outline-none transition-all ${errors.to ? 'border-red-500 bg-red-50' : 'border-gray-200 focus:border-amber-500'}`} placeholder="Konum seçiniz" />
+                            </div>
+
+                            <div className="flex gap-2">
+                                <div className="flex-1 relative">
+                                    <div className={`absolute left-3 top-3 z-10 ${errors.date ? 'text-red-500' : 'text-slate-900'}`}><Calendar size={16}/></div>
+                                    <div className={`absolute left-9 top-1.5 text-[8px] font-bold uppercase z-10 ${errors.date ? 'text-red-400' : 'text-gray-400'}`}>TARİH</div>
+                                    <DatePicker 
+                                        ref={startDatePickerRef} 
+                                        selected={date} 
+                                        onChange={handleStartSelect} 
+                                        showTimeSelect={isStartTimeMode}
+                                        showTimeSelectOnly={isStartTimeMode}
+                                        timeIntervals={30} 
+                                        timeCaption="SAAT" 
+                                        dateFormat={isStartTimeMode ? "HH:mm" : "d MMM yyyy HH:mm"}
+                                        locale={tr} 
+                                        portalId="root-portal"
+                                        shouldCloseOnSelect={false}
+                                        className={`w-full pl-9 pt-4 pb-2 text-xs font-bold text-slate-900 border rounded-xl outline-none ${errors.date ? 'border-red-500 bg-red-50' : 'border-gray-200'}`} 
+                                        placeholderText="Seç" 
+                                        popperPlacement="bottom-start" 
+                                    />
                                 </div>
-                                <div className="text-4xl font-bold text-slate-900 mb-1">{price}{symbol}</div>
-                                <div className="text-xs text-green-600 font-medium bg-green-100 px-2 py-1 rounded mb-4">Ücretsiz İptal</div>
-                                <button onClick={() => handleSelect(v.name, `${price}${symbol}`)} className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3.5 px-6 rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 group-hover:scale-105">Seç <ArrowRight size={16} className="text-amber-400"/></button>
+                                {bookingType === 'transfer' && (
+                                    <div className={`flex-1 relative transition-all duration-300 ${!isRoundTrip ? 'opacity-40 cursor-not-allowed' : 'opacity-100'}`}>
+                                        <div className={`absolute left-3 top-3 z-10 ${errors.returnDate ? 'text-red-500' : 'text-slate-900'}`}><History size={16}/></div>
+                                        <div className={`absolute left-9 top-1.5 text-[8px] font-bold uppercase z-10 ${errors.returnDate ? 'text-red-400' : 'text-gray-400'}`}>DÖNÜŞ</div>
+                                        <DatePicker 
+                                            ref={returnDatePickerRef} 
+                                            selected={returnDate} 
+                                            onChange={handleReturnSelect} 
+                                            showTimeSelect={isReturnTimeMode}
+                                            showTimeSelectOnly={isReturnTimeMode}
+                                            timeIntervals={30} 
+                                            timeCaption="SAAT" 
+                                            dateFormat={isReturnTimeMode ? "HH:mm" : "d MMM yyyy HH:mm"}
+                                            locale={tr} 
+                                            disabled={!isRoundTrip} 
+                                            portalId="root-portal"
+                                            shouldCloseOnSelect={false}
+                                            className={`w-full pl-9 pt-4 pb-2 text-xs font-bold border rounded-xl outline-none transition-colors 
+                                              ${errors.returnDate ? 'border-red-500 bg-red-50' : !isRoundTrip ? 'bg-gray-100 border-gray-200 text-gray-400' : 'bg-white border-gray-200 text-slate-900'}`} 
+                                            placeholderText={!isRoundTrip ? "-" : "Seç"} 
+                                            popperPlacement="bottom-end" 
+                                        />
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="flex gap-2">
+                                {bookingType === 'hourly' ? (
+                                     <div className="flex-1 border border-gray-200 rounded-xl p-2 relative flex flex-col justify-center">
+                                        <label className="text-[9px] font-bold text-gray-400 uppercase block mb-1 text-center">SÜRE</label>
+                                        <select value={duration} onChange={(e) => setDuration(e.target.value)} className="text-sm font-bold text-slate-900 text-center outline-none bg-transparent appearance-none cursor-pointer">
+                                            <option value="4 Saat">4 Saat</option><option value="8 Saat">8 Saat</option><option value="10 Saat">10 Saat</option><option value="12 Saat">12 Saat</option>
+                                        </select>
+                                    </div>
+                                ) : (
+                                    <div className="flex-1 border border-gray-200 rounded-xl p-2 flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-amber-400 transition-colors" onClick={() => setIsRoundTrip(!isRoundTrip)}>
+                                        <span className="text-[9px] font-bold text-gray-400 uppercase">GİDİŞ-DÖNÜŞ</span>
+                                        <div className={`w-8 h-4 rounded-full flex items-center p-0.5 transition-colors duration-300 ${isRoundTrip ? 'bg-green-500' : 'bg-gray-300'}`}>
+                                            <div className={`w-3 h-3 bg-white rounded-full shadow-md transform transition-transform duration-300 ${isRoundTrip ? 'translate-x-4' : 'translate-x-0'}`}></div>
+                                        </div>
+                                    </div>
+                                )}
+                                <div className="flex-1 border border-gray-200 rounded-xl p-2 relative">
+                                    <span className="text-[9px] font-bold text-gray-400 uppercase block mb-1 text-center">YOLCU</span>
+                                    <select value={passengers} onChange={(e) => setPassengers(e.target.value)} className="w-full text-sm font-bold text-slate-900 text-center outline-none bg-transparent appearance-none cursor-pointer">
+                                        {[1,2,3,4,5,6,7,8,9,10].map(n => <option key={n} value={n}>{n} Kişi</option>)}
+                                    </select>
+                                </div>
+                                <button onClick={handleUpdateSearch} className="flex-1 bg-red-600 text-white rounded-xl flex items-center justify-center shadow-md active:scale-95 transition-all"><Search size={24} /></button>
                             </div>
                         </div>
-                    </div>
-                )
-            })}
+                    ) : (
+                        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                            <div className="relative pl-6 border-l-2 border-gray-100 space-y-6">
+                                <div className="relative">
+                                    <div className={`absolute -left-[31px] top-0 w-4 h-4 rounded-full border-2 ${from ? 'bg-green-100 border-green-500' : 'bg-red-100 border-red-500'}`}></div>
+                                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">NEREDEN</span>
+                                    <p className={`text-sm font-bold leading-tight ${from ? 'text-slate-900' : 'text-red-500'}`}>{from || "Seçilmedi"}</p>
+                                    <p className="text-xs text-gray-500 mt-1 line-clamp-2">{pickupAddr}</p>
+                                </div>
+                                <div className="relative">
+                                    <div className={`absolute -left-[31px] top-0 w-4 h-4 rounded-full border-2 ${to ? 'bg-blue-100 border-blue-500' : 'bg-red-100 border-red-500'}`}></div>
+                                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">NEREYE</span>
+                                    <p className={`text-sm font-bold leading-tight ${to ? 'text-slate-900' : 'text-red-500'}`}>{to || "Seçilmedi"}</p>
+                                    <p className="text-xs text-gray-500 mt-1 line-clamp-2">{dropoffAddr}</p>
+                                </div>
+                            </div>
+                            <div className="h-px bg-gray-100 w-full"></div>
+                            <div className="space-y-4">
+                                <div className="flex justify-between items-center"><div className="flex items-center gap-3 text-gray-600"><Calendar size={18} /><span className="text-sm font-medium">Tarih</span></div><span className="text-sm font-bold text-slate-900 text-right">{formatDisplayDate(date ? date.toISOString() : null)}</span></div>
+                                {bookingType === 'transfer' && isRoundTrip && <div className="flex justify-between items-center"><div className="flex items-center gap-3 text-gray-600"><History size={18} /><span className="text-sm font-medium">Dönüş</span></div><span className={`text-sm font-bold text-right ${returnDate ? 'text-slate-900' : 'text-red-500'}`}>{returnDate ? formatDisplayDate(returnDate.toISOString()) : "Seçilmedi"}</span></div>}
+                                {bookingType === 'hourly' && <div className="flex justify-between items-center"><div className="flex items-center gap-3 text-gray-600"><Clock size={18} /><span className="text-sm font-medium">Süre</span></div><span className="text-sm font-bold text-slate-900">{duration}</span></div>}
+                                <div className="flex justify-between items-center"><div className="flex items-center gap-3 text-gray-600"><Users size={18} /><span className="text-sm font-medium">Yolcu</span></div><span className="text-sm font-bold text-slate-900">{passengers} Kişi</span></div>
+                                
+                                <div className="flex justify-between items-center pt-2 border-t border-gray-50 mt-2">
+                                    <div className="flex items-center gap-3 text-gray-600"><ArrowRightLeft size={18} /><span className="text-sm font-medium">Transfer Tipi</span></div>
+                                    <span className="text-[10px] font-bold px-2 py-1 rounded bg-slate-100 text-slate-600 uppercase tracking-wider">
+                                        {bookingType === 'hourly' ? 'Saatlik Tahsis' : (isRoundTrip ? 'Gidiş-Dönüş' : 'Tek Yön')}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
         </div>
+
+        <div className="lg:col-span-2 space-y-6 order-2 lg:order-1">
+            <h2 className="text-2xl font-bold text-slate-900">Araç Seçenekleri ({bookingType === 'hourly' ? 'Saatlik Tahsis' : 'Transfer'})</h2>
+            {isLoading ? (
+                <div className="space-y-6">{[1, 2, 3].map((i) => (<div key={i} className="h-64 bg-white rounded-2xl animate-pulse"></div>))}</div>
+            ) : (
+                <div className="space-y-6">
+                    {vehicles.map((v) => (
+                        <VehicleCard key={v.id} vehicle={v} rates={rates} isRoundTrip={isRoundTrip} bookingType={bookingType} duration={duration} onSelect={handleSelect} isDataReady={isDataReady} />
+                    ))}
+                </div>
+            )}
+        </div>
+
       </div>
+      <div id="root-portal"></div>
     </div>
   )
+}
+
+// 🔥 VehicleCard bileşeni saatlik çarpan eklenecek şekilde güncellendi
+function VehicleCard({ vehicle, rates, isRoundTrip, bookingType, duration, onSelect, isDataReady }: { vehicle: any, rates: any, isRoundTrip: boolean, bookingType: string, duration: string, onSelect: any, isDataReady: boolean }) {
+    const [currency, setCurrency] = useState<"TRY" | "USD" | "EUR" | "GBP">("TRY");
+    const symbols = { TRY: "₺", USD: "$", EUR: "€", GBP: "£" };
+    
+    // Fiyat hesaplama mantığı
+    let finalUsdPrice = vehicle.basePriceUsd;
+
+    if (bookingType === 'transfer') {
+      finalUsdPrice = isRoundTrip ? vehicle.basePriceUsd * 2 : vehicle.basePriceUsd;
+    } else {
+      // Saatlik tahsis çarpanları (4 saat baz alınmıştır)
+      const multipliers: Record<string, number> = {
+        "4 Saat": 1,
+        "8 Saat": 1.8,  // Örn: 8 saat %20 indirimli gibi bir çarpan
+        "10 Saat": 2.2,
+        "12 Saat": 2.5
+      };
+      finalUsdPrice = vehicle.basePriceUsd * (multipliers[duration] || 1);
+    }
+
+    const prices = { 
+      TRY: Math.round(finalUsdPrice * rates.TRY), 
+      EUR: Math.round(finalUsdPrice * rates.EUR), 
+      USD: Math.round(finalUsdPrice), 
+      GBP: Math.round(finalUsdPrice * rates.GBP) 
+    }
+    const selectedPriceStr = `${prices[currency]} ${symbols[currency]}`
+
+    return (
+        <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden flex flex-col md:flex-row hover:shadow-lg transition-all group">
+            <div className="relative w-full md:w-1/3 bg-gray-50 p-6 flex items-center justify-center">
+                <Image src={vehicle.image} alt={vehicle.name} width={300} height={200} className="object-contain group-hover:scale-105 transition-transform duration-500" unoptimized/>
+                {vehicle.badge && <div className="absolute top-3 left-3 bg-amber-500 text-white text-[10px] font-bold px-2 py-1 rounded shadow-sm flex gap-1"><Star size={10} fill="currentColor"/> {vehicle.badge}</div>}
+            </div>
+            <div className="flex-1 p-6 flex flex-col justify-between">
+                <div>
+                    <h3 className="text-xl font-bold text-slate-900">{vehicle.name}</h3>
+                    <div className="flex gap-3 mt-2 mb-4"><span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded flex items-center gap-1"><Users size={12}/> {vehicle.capacity}</span><span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded flex items-center gap-1"><Briefcase size={12}/> {vehicle.luggage}</span></div>
+                    <div className="grid grid-cols-2 gap-y-2 text-xs text-gray-500 mb-4"><div className="flex items-center gap-1.5"><Lock size={12} className="text-green-500"/> Sabit Fiyat</div><div className="flex items-center gap-1.5"><Plane size={12} className="text-blue-500"/> Uçuş Takibi</div><div className="flex items-center gap-1.5"><HandMetal size={12} className="text-amber-500"/> VIP Karşılama</div><div className="flex items-center gap-1.5"><ThumbsUp size={12} className="text-purple-500"/> Ücretsiz İptal</div></div>
+                </div>
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-gray-100 pt-4">
+                    {isDataReady ? (
+                        <>
+                            <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-2 w-full sm:w-auto">
+                                {(['TRY', 'USD', 'EUR', 'GBP'] as const).map((cur) => (
+                                    <button key={cur} onClick={() => setCurrency(cur)} className={`flex flex-col items-center justify-center px-3 py-1.5 rounded-lg border transition-all ${currency === cur ? 'bg-slate-900 text-white border-slate-900 shadow-md' : 'bg-white text-gray-500 border-gray-200 hover:border-amber-400'}`}>
+                                        <span className="text-[10px] font-medium opacity-80">{cur}</span><span className="text-xs font-bold whitespace-nowrap">{prices[cur]} {symbols[cur]}</span>
+                                    </button>
+                                ))}
+                            </div>
+                            <div className="flex items-center gap-4 w-full sm:w-auto justify-end">
+                                <div className="text-right hidden md:block"><span className="block text-2xl font-bold text-slate-900 leading-none">{selectedPriceStr}</span><span className="text-[10px] text-gray-400">Toplam Fiyat</span></div>
+                                <button onClick={() => onSelect(vehicle.name, selectedPriceStr)} className="bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 px-6 rounded-xl shadow-md transition-all text-sm whitespace-nowrap">Seç <ArrowRight size={16} className="inline ml-1"/></button>
+                            </div>
+                        </>
+                    ) : (
+                        <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-4"><div className="flex items-center gap-2 text-amber-600 bg-amber-50 px-4 py-2 rounded-lg border border-amber-100 w-full flex-1 text-xs font-bold"><AlertCircle size={18} /> Fiyat görmek için lütfen tüm alanları seçiniz.</div><button onClick={() => onSelect(vehicle.name, "0 TL")} className="bg-gray-200 text-gray-600 font-bold py-3 px-6 rounded-xl text-sm whitespace-nowrap">Seç <ArrowRight size={16} className="inline ml-1"/></button></div>
+                    )}
+                </div>
+            </div>
+        </div>
+    )
 }

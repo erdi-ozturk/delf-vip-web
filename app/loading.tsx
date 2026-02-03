@@ -4,7 +4,7 @@ export default function Loading() {
       {/* Logo Animasyonu */}
       <div className="relative w-32 h-32 animate-pulse">
         {/* Buraya kendi logonun yolunu yaz */}
-        <img src="/logo-new.png" alt="Loading" className="object-contain w-full h-full" />
+        <img src="/logo2.png" alt="Loading" className="object-contain w-full h-full" />
       </div>
       
       {/* Dönen Çember */}

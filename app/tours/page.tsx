@@ -1,64 +1,80 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { MapPin, Clock, Users, Star, ArrowRight, Calendar, Info, Car } from "lucide-react"
-import { useCurrency } from "@/components/CurrencyContext"
+import { MapPin, Clock, Users, Star, ArrowRight, Info, Car, Calendar } from "lucide-react"
+
+// ✅ 1. ADIM: Global Dil Merkezini (Context) içe aktar
+import { useLanguage } from "@/components/LanguageContext";
 
 export default function ToursPage() {
   
-  const { convertPrice } = useCurrency()
+  // ✅ 2. ADIM: Global dili çek
+  const { language } = useLanguage();
 
-  // BAZ FİYATLAR ARTIK DOLAR ($)
+  // CANLI KUR SİSTEMİ
+  const [tryRate, setTryRate] = useState(36); 
+  const SAFETY_MARGIN = 1.05; 
+
+  useEffect(() => {
+    async function fetchRate() {
+      try {
+        const res = await fetch('https://api.frankfurter.app/latest?from=USD&to=TRY');
+        const data = await res.json();
+        
+        if (data && data.rates && data.rates.TRY) {
+          const liveRate = data.rates.TRY * SAFETY_MARGIN;
+          setTryRate(liveRate);
+        }
+      } catch (error) {
+        console.error("Kur çekilemedi, varsayılan değer kullanılıyor.");
+      }
+    }
+    fetchRate();
+  }, []);
+  // CANLI KUR SİSTEMİ BİTİŞ
+
+  // BAZ FİYATLAR (DOLAR $)
   const tours = [
     {
       id: 1,
-      title: "Tarihi Yarımada Ulaşım & Tahsis",
+      title: "İstanbul Ulaşım & Tahsis",
       location: "Sultanahmet, İstanbul",
-      image: "https://images.unsplash.com/photo-1527838832700-5059252407fa?q=80&w=1000&auto=format&fit=crop",
+      image: "/images/tours/istanbul-vip-transfer-tour.jpg",
       duration: "10 Saat (Araç Tahsis)",
       rating: "4.9",
-      priceUsd: 220, // ÖRNEK: 220 Dolar
+      priceUsd: 150, 
       tags: ["Şoförlü Araç", "Günlük", "Transfer"]
     },
     {
       id: 2,
       title: "Sapanca & Maşukiye Transfer",
       location: "Sakarya",
-      image: "https://images.unsplash.com/photo-1550586678-f7225f03c44b?q=80&w=1000&auto=format&fit=crop",
+      image: "/images/tours/sapanca-masukiye-vip-transfer-tour.jpg",
       duration: "Tam Gün (Gidiş-Dönüş)",
       rating: "5.0",
-      priceUsd: 280, // ÖRNEK: 280 Dolar
+      priceUsd: 225, 
       tags: ["Doğa", "Beklemeli", "VIP"]
     },
     {
       id: 3,
       title: "Bursa & Uludağ Ulaşım",
       location: "Bursa",
-      image: "https://images.unsplash.com/photo-1551524164-687a55dd1126?q=80&w=1000&auto=format&fit=crop",
-      duration: "Günübirlik Transfer",
+      image: "/images/tours/Bursa-Uludag-vip-tour-transfer.jpg",
+      duration: "Tam Gün (Gidiş-Dönüş)",
       rating: "4.8",
-      priceUsd: 330, // ÖRNEK: 330 Dolar
+      priceUsd: 280, 
       tags: ["Kayak", "Teleferik", "Ulaşım"]
-    },
-    {
-      id: 5,
-      title: "Kapadokya VIP Transfer",
-      location: "Nevşehir",
-      image: "https://images.unsplash.com/photo-1641128324972-af3212f0f6bd?q=80&w=1000&auto=format&fit=crop",
-      duration: "Şehirlerarası",
-      rating: "5.0",
-      priceUsd: 650, 
-      tags: ["Şehirlerarası", "Tek Yön", "VIP"]
     },
     {
       id: 6,
       title: "Lüks Alışveriş Noktaları Transferi",
       location: "Zorlu & İstinye Park",
-      image: "https://images.unsplash.com/photo-1483985988355-763728e1935b?q=80&w=1000&auto=format&fit=crop",
-      duration: "6 Saat Tahsis",
+      image: "/images/tours/istanbul-transfer-tour.jpeg",
+      duration: "8 Saat Tahsis",
       rating: "4.7",
-      priceUsd: 200, 
+      priceUsd: 120, 
       tags: ["Alışveriş", "Beklemeli", "VIP"]
     }
   ]
@@ -66,10 +82,11 @@ export default function ToursPage() {
   return (
     <main className="bg-gray-50 min-h-screen">
       
+      {/* HERO SECTION */}
       <section className="relative h-[500px] flex items-center justify-center bg-slate-900 overflow-hidden">
         <div className="absolute inset-0 opacity-40">
             <Image 
-                src="https://images.unsplash.com/photo-1527838832700-5059252407fa?q=80&w=1998&auto=format&fit=crop"
+                src="/images/tours/istanbul-transfer-tour.avif"
                 alt="Turkey Tours"
                 fill
                 className="object-cover"
@@ -93,6 +110,7 @@ export default function ToursPage() {
         </div>
       </section>
 
+      {/* TOURS LIST */}
       <section className="py-20 px-4 -mt-20 relative z-20">
         <div className="max-w-7xl mx-auto">
             
@@ -106,8 +124,10 @@ export default function ToursPage() {
 
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {tours.map((tour) => {
-                    // YENİ: Dolar fiyatını çeviriyoruz
-                    const { price, symbol } = convertPrice(tour.priceUsd)
+                    
+                    const price = `$${tour.priceUsd}`;
+                    // Güncel kur ile çarpıp yuvarlıyoruz
+                    const priceTry = Math.round(tour.priceUsd * tryRate);
 
                     return (
                         <div key={tour.id} className="group bg-white rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl hover:shadow-amber-500/10 transition-all duration-300 border border-gray-100 hover:border-amber-200 flex flex-col">
@@ -156,10 +176,19 @@ export default function ToursPage() {
                                 <div className="mt-auto flex items-center justify-between pt-6 border-t border-gray-100">
                                     <div>
                                         <p className="text-xs text-gray-400">Tahsis Ücreti</p>
-                                        <p className="text-2xl font-bold text-slate-900">{price}{symbol}</p>
+                                        <p className="text-2xl font-bold text-slate-900">{price}</p>
+                                        
+                                        {/* ✅ 3. ADIM: Global Dil Kontrolü */}
+                                        <p className="text-[10px] text-gray-400">
+                                            <span>{language === 'tr' ? 'Yaklaşık' : 'Approx'} </span> 
+                                            <span className="notranslate">{priceTry}₺</span>
+                                        </p>
+
                                     </div>
+                                    
+                                    {/* 🔥 DÜZELTME: href="/contact" yerine href="/booking" yapıldı */}
                                     <Link 
-                                        href="/contact" 
+                                        href="/booking" 
                                         className="bg-slate-900 hover:bg-slate-800 text-white px-5 py-3 rounded-xl font-bold text-sm transition-all flex items-center gap-2 group-hover:bg-amber-600"
                                     >
                                         Rezervasyon Yap <ArrowRight size={16} />
@@ -173,6 +202,7 @@ export default function ToursPage() {
         </div>
       </section>
 
+      {/* CALL TO ACTION */}
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4">
             <div className="bg-slate-900 rounded-3xl p-8 md:p-16 relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-12">
@@ -193,9 +223,9 @@ export default function ToursPage() {
                     </div>
                 </div>
                 <div className="relative z-10 hidden md:block">
-                     <div className="w-64 h-64 bg-gradient-to-br from-amber-500 to-yellow-600 rounded-full flex items-center justify-center shadow-2xl shadow-amber-500/20">
-                        <MapPin size={80} className="text-white animate-bounce" />
-                     </div>
+                      <div className="w-64 h-64 bg-gradient-to-br from-amber-500 to-yellow-600 rounded-full flex items-center justify-center shadow-2xl shadow-amber-500/20">
+                         <MapPin size={80} className="text-white animate-bounce" />
+                      </div>
                 </div>
             </div>
         </div>
