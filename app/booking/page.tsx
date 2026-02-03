@@ -18,6 +18,7 @@ declare global {
   }
 }
 
+// Araç Verileri
 const vehicles = [
   { id: 1, name: "Mercedes-Benz Vito VIP", type: "Premium Minivan", image: "/vehicles/vito.png", capacity: "6", luggage: "6", basePriceUsd: 55, badge: "En Çok Tercih Edilen" },
   { id: 2, name: "Mercedes-Benz Sprinter", type: "Large Group Van", image: "/vehicles/sprinter.png", capacity: "16", luggage: "12", basePriceUsd: 110, badge: "" },
@@ -178,6 +179,7 @@ export default function BookingSelectionPage() {
     router.push(`/booking?${params.toString()}`);
   };
 
+  // ✅ DÜZELTİLEN: toggleEditing Fonksiyonu (Dışarı çıkarıldı ve butona bağlandı)
   const toggleEditing = () => {
     if (!isEditing) {
       sendGAEvent({ event: 'edit_search_clicked' });
@@ -186,6 +188,7 @@ export default function BookingSelectionPage() {
   };
 
   const handleSelect = (vehicleName: string, finalPrice: string) => {
+    // ✅ GA: Takip Kodu
     sendGAEvent({ event: 'vehicle_selected', value: vehicleName, price: finalPrice });
 
     if (!isDataReady) {
@@ -225,10 +228,12 @@ export default function BookingSelectionPage() {
 
       <div className="max-w-7xl mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
         
+        {/* REZERVASYON KARTI (order-1 ile mobilde üste alındı) */}
         <div className="lg:col-span-1 lg:mt-14 order-1 lg:order-2"> 
             <div className="bg-white rounded-2xl shadow-lg border border-gray-200 sticky lg:top-24 overflow-visible">
                 <div className="bg-gray-50 px-6 py-4 border-b border-gray-100 flex justify-between items-center">
                     <h3 className="font-bold text-lg text-slate-900">Rezervasyon</h3>
+                    {/* ✅ DÜZELTİLEN: toggleEditing buraya bağlandı */}
                     <button onClick={toggleEditing} className={`text-sm font-bold flex items-center gap-1 ${isEditing ? 'text-red-500' : 'text-amber-600'}`}>
                         {isEditing ? <><X size={16}/> İptal</> : <><Edit2 size={14} /> Düzenle</>}
                     </button>
@@ -362,14 +367,25 @@ export default function BookingSelectionPage() {
             </div>
         </div>
 
+        {/* ARAÇ LİSTESİ (order-2 ile mobilde alta alındı) */}
         <div className="lg:col-span-2 space-y-6 order-2 lg:order-1">
             <h2 className="text-2xl font-bold text-slate-900">Araç Seçenekleri ({bookingType === 'hourly' ? 'Saatlik Tahsis' : 'Transfer'})</h2>
             {isLoading ? (
                 <div className="space-y-6">{[1, 2, 3].map((i) => (<div key={i} className="h-64 bg-white rounded-2xl animate-pulse"></div>))}</div>
             ) : (
                 <div className="space-y-6">
-                    {vehicles.map((v) => (
-                        <VehicleCard key={v.id} vehicle={v} rates={rates} isRoundTrip={isRoundTrip} bookingType={bookingType} duration={duration} onSelect={handleSelect} isDataReady={isDataReady} />
+                        {vehicles.map((v) => (
+                        <VehicleCard 
+                        key={v.id} 
+                        vehicle={v} 
+                        rates={rates} 
+                        // Her iki değeri de Boolean() içine alarak kesinleştiriyoruz
+                        isRoundTrip={Boolean(isRoundTrip)} 
+                        bookingType={bookingType} 
+                        duration={duration} 
+                        onSelect={handleSelect} 
+                        isDataReady={Boolean(isDataReady)} // 👈 BURAYI BU ŞEKİLDE GÜNCELLE
+                        />
                     ))}
                 </div>
             )}
@@ -381,21 +397,37 @@ export default function BookingSelectionPage() {
   )
 }
 
-// 🔥 VehicleCard bileşeni saatlik çarpan eklenecek şekilde güncellendi
-function VehicleCard({ vehicle, rates, isRoundTrip, bookingType, duration, onSelect, isDataReady }: { vehicle: any, rates: any, isRoundTrip: boolean, bookingType: string, duration: string, onSelect: any, isDataReady: boolean }) {
+// ✅ DÜZELTİLEN: VehicleCard parametreleri güncellendi ve fiyat hesaplama eklendi
+function VehicleCard({ 
+  vehicle, 
+  rates, 
+  isRoundTrip, 
+  bookingType, 
+  duration, 
+  onSelect, 
+  isDataReady 
+}: { 
+  vehicle: any, 
+  rates: any, 
+  isRoundTrip: boolean, 
+  bookingType: string, 
+  duration: string, 
+  onSelect: any, 
+  isDataReady: boolean 
+}) {
     const [currency, setCurrency] = useState<"TRY" | "USD" | "EUR" | "GBP">("TRY");
     const symbols = { TRY: "₺", USD: "$", EUR: "€", GBP: "£" };
     
-    // Fiyat hesaplama mantığı
+    // ✅ Fiyat hesaplama mantığı eklendi
     let finalUsdPrice = vehicle.basePriceUsd;
 
     if (bookingType === 'transfer') {
       finalUsdPrice = isRoundTrip ? vehicle.basePriceUsd * 2 : vehicle.basePriceUsd;
     } else {
-      // Saatlik tahsis çarpanları (4 saat baz alınmıştır)
+      // Saatlik tahsis çarpanları
       const multipliers: Record<string, number> = {
         "4 Saat": 1,
-        "8 Saat": 1.8,  // Örn: 8 saat %20 indirimli gibi bir çarpan
+        "8 Saat": 1.8,
         "10 Saat": 2.2,
         "12 Saat": 2.5
       };
