@@ -1,0 +1,45 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 1. Araçlar (KM bazlı hesaplama için fiyat verilerini de ekledik)
+model Vehicle {
+  id            String   @id @default(cuid())
+  name          String   // Mercedes Vito
+  image         String   
+  basePriceUsd  Float    // Açılış ücreti
+  pricePerKm    Float    @default(0) // KM başına eklenecek ücret
+  capacity      String
+  luggage       String
+  badge         String?
+}
+
+// 2. Özel Rotalar (Bölge bazlı sabit fiyatlar için)
+// Örn: "İstanbul Havalimanı" -> "Sultanahmet" = 60$
+model FixedRoute {
+  id          String   @id @default(cuid())
+  fromLocation String  // Başlangıç (Örn: IST Airport)
+  toLocation   String  // Varış (Örn: Sultanahmet)
+  priceUsd     Float   // Sabit Fiyat
+  vehicleType  String  // Hangi araç için geçerli? (Vito, Sprinter vb.)
+}
+
+// 3. Çarpanlar (Zaten yapmıştık)
+model RateMultipliers {
+  id   Int   @id @default(1)
+  h4   Float @default(1.0)
+  h8   Float @default(1.8)
+  h10  Float @default(2.2)
+  h12  Float @default(2.5)
+}
