@@ -16,10 +16,11 @@ export default function WeglotScript() {
                 // @ts-ignore
                 window.Weglot.initialize({
                     api_key: process.env.NEXT_PUBLIC_WEGLOT_API_KEY || '',
-                    hide_switcher: false, // GİZLEME! (Çalıştığını görmek için)
+                    original_language: 'tr',
+                    destination_languages: 'en,ar',
+                    hide_switcher: false,
                     switchers: [
                         {
-                            // Sadece Masaüstü hedefini dene
                             target: "#weglot_here",
                             style: {
                                 full_name: false,

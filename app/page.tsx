@@ -229,6 +229,7 @@ export default function Home() {
           "opens": "00:00",
           "closes": "23:59"
         },
+        "availableLanguage": ["Turkish", "English", "Arabic"],
         "sameAs": [
           "https://www.facebook.com",
           "https://www.instagram.com"
@@ -240,7 +241,10 @@ export default function Home() {
         "name": "VIP Havalimanı Transfer",
         "provider": { "@id": "https://www.delfvip.com/#business" },
         "serviceType": "Airport Transfer",
-        "areaServed": { "@type": "City", "name": "İstanbul" },
+        "areaServed": [
+          { "@type": "City", "name": "İstanbul", "sameAs": "https://www.wikidata.org/wiki/Q406" },
+          { "@type": "Country", "name": "Turkey", "sameAs": "https://www.wikidata.org/wiki/Q43" }
+        ],
         "description": "İstanbul Havalimanı (IST) ve Sabiha Gökçen (SAW) transferleri için Mercedes Vito araçlarla lüks VIP ulaşım hizmeti.",
         "offers": {
           "@type": "Offer",

@@ -27,8 +27,27 @@ export const metadata: Metadata = {
     template: "%s | DELF VIP Transfer"
   },
   description: defaultDescription,
-  keywords: ["istanbul vip transfer", "sabiha gökçen transfer", "istanbul havalimanı transfer", "şoförlü araç kiralama", "mercedes vito transfer"],
+  keywords: [
+    // Türkçe
+    "istanbul vip transfer", "sabiha gökçen transfer", "istanbul havalimanı transfer",
+    "şoförlü araç kiralama", "mercedes vito transfer", "havalimanı karşılama hizmeti",
+    // English
+    "istanbul airport transfer", "istanbul private driver", "turkey vip transfer",
+    "luxury transfer istanbul", "chauffeur service istanbul", "ist airport taxi",
+    "saw airport transfer", "mercedes vito hire istanbul",
+    // Arabic
+    "نقل فيب اسطنبول", "نقل مطار اسطنبول", "سائق خاص اسطنبول", "ليموزين اسطنبول",
+  ],
   metadataBase: new URL(siteUrl),
+  alternates: {
+    canonical: "/",
+    languages: {
+      "tr": siteUrl,
+      "en": `${siteUrl}/en`,
+      "ar": `${siteUrl}/ar`,
+      "x-default": siteUrl,
+    },
+  },
   icons: {
     icon: '/logo2.png',
   },
