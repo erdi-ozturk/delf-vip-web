@@ -1,6 +1,17 @@
+import type { Metadata } from "next"
 import Image from "next/image"
 import Link from "next/link"
 import { CheckCircle2, ShieldCheck, Star, Users } from "lucide-react"
+
+export const metadata: Metadata = {
+  title: "Hakkımızda",
+  description: "DELF VIP olarak İstanbul'da güvenli, konforlu ve zamanında VIP transfer hizmeti sunuyoruz. Profesyonel şoförlerimiz ve lüks araç filomuzla tanışın.",
+  openGraph: {
+    title: "Hakkımızda | DELF VIP Transfer",
+    description: "DELF VIP olarak İstanbul'da güvenli, konforlu ve zamanında VIP transfer hizmeti sunuyoruz.",
+    url: "https://www.delfvip.com/about",
+  },
+};
 
 export default function AboutPage() {
   return (
@@ -54,8 +65,8 @@ export default function AboutPage() {
                     </div>
                     {/* Deneyim Kartı */}
                     <div className="absolute -bottom-6 -right-6 z-20 bg-white p-6 rounded-2xl shadow-xl border border-gray-100 animate-bounce-slow">
-                        <p className="text-4xl font-bold text-amber-500 mb-1">10k+</p>
-                        <p className="font-bold text-slate-900 mb-1">Mutlu Müşteri</p>
+                        <p className="text-4xl font-bold text-amber-500 mb-1">5.000+</p>
+                        <p className="font-bold text-slate-900 mb-1">Mutlu Yolcu</p>
                         <p className="text-xs text-gray-500 w-40">Dünyanın dört bir yanından misafirlerimizi ağırladık.</p>
                     </div>
                 </div>

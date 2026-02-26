@@ -6,7 +6,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { Facebook, Instagram, MapPin, Phone } from "lucide-react";
 
-import WeglotScript from "@/components/WeglotScript"; 
+import WeglotScript from "@/components/WeglotScript";
+import WhatsAppFloat from "@/components/WhatsAppFloat";
+import CookieBanner from "@/components/CookieBanner";
 import Script from 'next/script';
 
 // 🔥 Google Analytics bileşenini import ettik
@@ -15,15 +17,42 @@ import { LanguageProvider } from "@/components/LanguageContext";
 
 const inter = Inter({ subsets: ["latin"] });
 
+const siteUrl = "https://www.delfvip.com";
+const defaultTitle = "DELF VIP | İstanbul VIP Transfer & Şoförlü Araç Kiralama";
+const defaultDescription = "İstanbul Havalimanı (IST) ve Sabiha Gökçen (SAW) için 7/24 lüks VIP transfer hizmeti. Mercedes Vito araçlarla konforlu, güvenli ve sabit fiyatlı yolculuk.";
+
 export const metadata: Metadata = {
   title: {
-    default: "DELF VIP | İstanbul VIP Transfer & Şoförlü Araç Kiralama",
+    default: defaultTitle,
     template: "%s | DELF VIP Transfer"
   },
-  description: "İstanbul Havalimanı (IST) ve Sabiha Gökçen (SAW) için 7/24 lüks VIP transfer hizmeti. Mercedes Vito araçlarla konforlu, güvenli ve sabit fiyatlı yolculuk.",
+  description: defaultDescription,
   keywords: ["istanbul vip transfer", "sabiha gökçen transfer", "istanbul havalimanı transfer", "şoförlü araç kiralama", "mercedes vito transfer"],
+  metadataBase: new URL(siteUrl),
   icons: {
     icon: '/logo2.png',
+  },
+  openGraph: {
+    type: "website",
+    locale: "tr_TR",
+    url: siteUrl,
+    siteName: "DELF VIP",
+    title: defaultTitle,
+    description: defaultDescription,
+    images: [
+      {
+        url: "/og-image.jpg",
+        width: 1200,
+        height: 630,
+        alt: "DELF VIP Transfer - İstanbul Lüks Transfer Hizmeti",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: defaultTitle,
+    description: defaultDescription,
+    images: ["/og-image.jpg"],
   },
 };
 
@@ -56,7 +85,7 @@ export default function RootLayout({
         {/* GOOGLE MAPS SCRIPT */}
         <Script
           id="google-maps"
-          src={`https://maps.googleapis.com/maps/api/js?key=AIzaSyDHBoh7e83CUbW4_B72nJM0CHhQ712m8Pw&libraries=places&loading=async`}
+          src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places&loading=async`}
           strategy="beforeInteractive"
         />
 
@@ -65,6 +94,9 @@ export default function RootLayout({
           <Navbar />
 
           {children}
+
+          <WhatsAppFloat />
+          <CookieBanner />
 
           {/* --- FOOTER --- */}
           <footer className="bg-gray-900 text-gray-300 border-t border-gray-800 pt-16 pb-8 mt-auto">
@@ -149,7 +181,7 @@ export default function RootLayout({
 
               <div className="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
                 <p className="text-xs text-gray-500 text-center md:text-left">
-                  &copy; 2024 DELF VIP. Tüm hakları saklıdır.
+                  &copy; {new Date().getFullYear()} DELF VIP. Tüm hakları saklıdır.
                 </p>
                 
                 <div className="flex gap-3">

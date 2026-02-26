@@ -35,7 +35,35 @@ model FixedRoute {
   vehicleType  String  // Hangi araç için geçerli? (Vito, Sprinter vb.)
 }
 
-// 3. Çarpanlar (Zaten yapmıştık)
+// 3. Rezervasyonlar
+model Reservation {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+
+  // Müşteri bilgileri
+  name        String
+  phone       String
+  email       String?
+  note        String?
+
+  // Rezervasyon detayları
+  bookingType  String   // 'transfer' | 'hourly'
+  pickupName   String?  // Kısa isim (İstanbul Havalimanı)
+  pickupAddr   String   // Tam adres
+  dropoffName  String?  // Kısa isim
+  dropoffAddr  String   // Tam adres
+  date        String
+  returnDate  String?
+  duration    String?  // Saatlik mod için
+  passengers  String
+  vehicle     String
+  price       String
+
+  // Durum
+  status      String   @default("new") // 'new' | 'confirmed' | 'cancelled'
+}
+
+// 4. Çarpanlar (Zaten yapmıştık)
 model RateMultipliers {
   id   Int   @id @default(1)
   h4   Float @default(1.0)

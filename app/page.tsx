@@ -6,9 +6,10 @@ import { useRouter } from "next/navigation";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { tr } from 'date-fns/locale';
-import { 
-  MapPin, Calendar, Users, Search, 
-  ArrowRightLeft, Clock, History, CheckCircle2, Plane, AlertCircle, ChevronDown 
+import {
+  MapPin, Calendar, Users, Search,
+  ArrowRightLeft, Clock, History, CheckCircle2, Plane, AlertCircle, ChevronDown,
+  Shield, Zap, Car, PhoneCall, Award, BadgeCheck, ArrowRight, Route
 } from "lucide-react";
 
 declare global {
@@ -194,9 +195,69 @@ export default function Home() {
     router.push(`/booking?${params.toString()}`);
   };
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "LocalBusiness",
+        "@id": "https://www.delfvip.com/#business",
+        "name": "DELF VIP Transfer",
+        "url": "https://www.delfvip.com",
+        "telephone": "+905441459199",
+        "email": "info@delfvip.com",
+        "description": "İstanbul Havalimanı ve Sabiha Gökçen Havalimanı için 7/24 lüks VIP transfer hizmeti. Mercedes Vito araçlarla konforlu, güvenli ve sabit fiyatlı yolculuk.",
+        "image": "https://www.delfvip.com/og-image.jpg",
+        "priceRange": "$$",
+        "currenciesAccepted": "TRY, USD, EUR, GBP",
+        "paymentAccepted": "Cash, Credit Card",
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": "İstanbul Havalimanı Yolu Üzeri",
+          "addressLocality": "Arnavutköy",
+          "addressRegion": "İstanbul",
+          "postalCode": "34275",
+          "addressCountry": "TR"
+        },
+        "geo": {
+          "@type": "GeoCoordinates",
+          "latitude": 41.2063,
+          "longitude": 28.7260
+        },
+        "openingHoursSpecification": {
+          "@type": "OpeningHoursSpecification",
+          "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"],
+          "opens": "00:00",
+          "closes": "23:59"
+        },
+        "sameAs": [
+          "https://www.facebook.com",
+          "https://www.instagram.com"
+        ]
+      },
+      {
+        "@type": "Service",
+        "@id": "https://www.delfvip.com/#service",
+        "name": "VIP Havalimanı Transfer",
+        "provider": { "@id": "https://www.delfvip.com/#business" },
+        "serviceType": "Airport Transfer",
+        "areaServed": { "@type": "City", "name": "İstanbul" },
+        "description": "İstanbul Havalimanı (IST) ve Sabiha Gökçen (SAW) transferleri için Mercedes Vito araçlarla lüks VIP ulaşım hizmeti.",
+        "offers": {
+          "@type": "Offer",
+          "priceCurrency": "USD",
+          "availability": "https://schema.org/InStock"
+        }
+      }
+    ]
+  };
+
   return (
     <main className="min-h-screen bg-gray-50">
-      
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+
       {/* Script kaldırıldı, Layout.tsx'e taşındı */}
       <div id="root-portal" className="relative z-[9999]"></div>
 
@@ -231,7 +292,7 @@ export default function Home() {
                     ref={fromInputRef} 
                     type="text" 
                     placeholder="Havalimanı, Otel..." 
-                    className="absolute inset-0 w-full h-full bg-transparent outline-none text-xs md:text-sm font-bold text-slate-900 placeholder:text-gray-300 pl-12 pt-4 pb-3 z-10 cursor-pointer"
+                    className="absolute inset-0 w-full h-full bg-transparent outline-none text-xs md:text-sm font-bold text-slate-900 placeholder:text-gray-400 pl-12 pt-4 pb-3 z-10 cursor-text"
                     onChange={(e) => {
                         setFromLocation(e.target.value);
                         setFromFullAddress("");
@@ -250,9 +311,24 @@ export default function Home() {
               </div>
 
               {activeTab === 'transfer' && (
-                <div className="hidden lg:flex items-center justify-center -mx-3 z-10">
-                   <button className="w-8 h-8 bg-white rounded-full border border-gray-200 shadow-sm flex items-center justify-center text-gray-400 hover:text-amber-500 hover:border-amber-400 hover:rotate-180 transition-all">
+                <div className="flex items-center justify-center lg:-mx-3 z-10 w-full lg:w-auto">
+                   <button
+                     type="button"
+                     aria-label="Nereden ve nereye alanlarını değiştir"
+                     onClick={() => {
+                       const tempLocation = fromLocation;
+                       const tempFullAddress = fromFullAddress;
+                       setFromLocation(toLocation);
+                       setFromFullAddress(toFullAddress);
+                       setToLocation(tempLocation);
+                       setToFullAddress(tempFullAddress);
+                       if (fromInputRef.current) fromInputRef.current.value = toLocation;
+                       if (toInputRef.current) toInputRef.current.value = tempLocation;
+                     }}
+                     className="flex items-center gap-2 bg-white border border-gray-200 shadow-sm text-gray-500 hover:text-amber-500 hover:border-amber-400 transition-all rounded-full px-4 py-2 lg:w-8 lg:h-8 lg:p-0 lg:justify-center text-xs font-semibold lg:hover:rotate-180"
+                   >
                       <ArrowRightLeft size={14} />
+                      <span className="lg:hidden">Güzergahı Değiştir</span>
                    </button>
                 </div>
               )}
@@ -263,7 +339,7 @@ export default function Home() {
                     ref={toInputRef} 
                     type="text" 
                     placeholder="Varış Noktası..." 
-                    className="absolute inset-0 w-full h-full bg-transparent outline-none text-xs md:text-sm font-bold text-slate-900 placeholder:text-gray-300 pl-12 pt-4 pb-3 z-10 cursor-pointer"
+                    className="absolute inset-0 w-full h-full bg-transparent outline-none text-xs md:text-sm font-bold text-slate-900 placeholder:text-gray-400 pl-12 pt-4 pb-3 z-10 cursor-text"
                     onChange={(e) => {
                         setToLocation(e.target.value);
                         setToFullAddress("");
@@ -381,8 +457,9 @@ export default function Home() {
                     {activeTab === 'transfer' ? (
                         <>
                             <label className="text-[8px] font-bold text-gray-400 uppercase tracking-wider text-center">GİDİŞ-DÖNÜŞ</label>
-                            <button 
-                                onClick={() => setIsRoundTrip(!isRoundTrip)} 
+                            <button
+                                onClick={() => setIsRoundTrip(!isRoundTrip)}
+                                aria-label={isRoundTrip ? "Gidiş-dönüşü kapat" : "Gidiş-dönüşü aç"}
                                 className={`w-9 h-5 rounded-full flex items-center p-0.5 transition-colors duration-300 ${isRoundTrip ? 'bg-green-500' : 'bg-gray-300'}`}
                             >
                                 <div className={`w-4 h-4 bg-white rounded-full shadow-md transform transition-transform duration-300 ${isRoundTrip ? 'translate-x-4' : 'translate-x-0'}`}></div>
@@ -464,6 +541,240 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* ===================== STATS ===================== */}
+      <section className="bg-white py-14 border-b border-gray-100">
+        <div className="max-w-5xl mx-auto px-4 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+          {[
+            { value: "5.000+", label: "Mutlu Yolcu" },
+            { value: "7/24",   label: "Kesintisiz Hizmet" },
+            { value: "%100",   label: "Zamanında Karşılama" },
+            { value: "3",      label: "Premium Araç Tipi" },
+          ].map((stat) => (
+            <div key={stat.label}>
+              <div className="text-4xl font-black text-slate-900">{stat.value}</div>
+              <div className="text-sm text-gray-500 mt-2 font-medium">{stat.label}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ===================== NASIL ÇALIŞIR? ===================== */}
+      <section className="bg-gray-50 py-20">
+        <div className="max-w-5xl mx-auto px-4">
+          <div className="text-center mb-14">
+            <span className="text-xs font-bold uppercase tracking-widest text-amber-500 bg-amber-50 px-4 py-1.5 rounded-full">3 Kolay Adım</span>
+            <h2 className="text-3xl md:text-4xl font-black text-slate-900 mt-4">Nasıl Çalışır?</h2>
+            <p className="text-gray-500 mt-3 max-w-xl mx-auto">Rezervasyonunuzdan karşılamaya kadar tüm süreç sizin için yönetilir.</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
+            {/* Bağlantı çizgisi (masaüstü) */}
+            <div className="hidden md:block absolute top-10 left-1/3 right-1/3 h-0.5 bg-amber-200 z-0" />
+            {[
+              {
+                step: "01",
+                icon: <Search size={24} />,
+                title: "Formu Doldurun",
+                desc: "Nereden, nereye, tarih ve yolcu bilgilerini girerek fiyatınızı anında öğrenin.",
+              },
+              {
+                step: "02",
+                icon: <CheckCircle2 size={24} />,
+                title: "Onayı Alın",
+                desc: "Rezervasyonunuz alındıktan sonra WhatsApp üzerinden şoför bilgileri ve onay mesajı gönderilir.",
+              },
+              {
+                step: "03",
+                icon: <Car size={24} />,
+                title: "Karşılanın",
+                desc: "Şoförünüz isminizin yazılı olduğu tabelayla sizi çıkış kapısında bekler.",
+              },
+            ].map((item, i) => (
+              <div key={i} className="relative z-10 bg-white rounded-2xl p-8 shadow-sm border border-gray-100 text-center flex flex-col items-center gap-4">
+                <div className="w-16 h-16 rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center">
+                  {item.icon}
+                </div>
+                <div className="text-xs font-black text-amber-400 tracking-widest">{item.step}</div>
+                <h3 className="text-lg font-bold text-slate-900">{item.title}</h3>
+                <p className="text-sm text-gray-500 leading-relaxed">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ===================== NEDEN BİZ? ===================== */}
+      <section className="bg-white py-20">
+        <div className="max-w-5xl mx-auto px-4">
+          <div className="text-center mb-14">
+            <span className="text-xs font-bold uppercase tracking-widest text-amber-500 bg-amber-50 px-4 py-1.5 rounded-full">Fark Yaratan Detaylar</span>
+            <h2 className="text-3xl md:text-4xl font-black text-slate-900 mt-4">Neden DELF VIP?</h2>
+            <p className="text-gray-500 mt-3 max-w-xl mx-auto">Standart transfer değil, ayrıcalıklı bir deneyim sunuyoruz.</p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[
+              { icon: <BadgeCheck size={22} />, title: "Sabit Fiyat Garantisi",    desc: "Gizli ücret yok. Rezervasyon anında fiyatınız sabittir, trafik veya rota değişmez." },
+              { icon: <Plane size={22} />,      title: "Uçuş Takibi",             desc: "Uçuş kodunuzu takip ediyoruz. Rötar durumunda şoförünüz sizi yine bekler." },
+              { icon: <Shield size={22} />,     title: "Lisanslı Profesyoneller",  desc: "Tüm şoförlerimiz eğitimli, lisanslı ve güvenlik kontrollüdür." },
+              { icon: <PhoneCall size={22} />,  title: "7/24 Destek",             desc: "Gece yarısı da olsa ulaşabileceğiniz bir ekip her zaman hazır." },
+              { icon: <Users size={22} />,      title: "Ücretsiz Bebek Koltuğu",  desc: "Rezervasyonda belirtmeniz yeterli, bebek koltuğu ücretsiz eklenir." },
+              { icon: <Zap size={22} />,        title: "Ücretsiz Bekleme",        desc: "Havalimanı karşılamalarında 1 saate kadar bekleme ücretsizdir." },
+            ].map((item, i) => (
+              <div key={i} className="flex gap-4 p-6 rounded-2xl border border-gray-100 hover:border-amber-300 hover:shadow-md transition-all">
+                <div className="w-10 h-10 rounded-xl bg-slate-900 text-amber-400 flex items-center justify-center shrink-0">
+                  {item.icon}
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 mb-1">{item.title}</h3>
+                  <p className="text-sm text-gray-500 leading-relaxed">{item.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ===================== ARAÇ FİLOSU ===================== */}
+      <section className="bg-slate-900 py-20">
+        <div className="max-w-5xl mx-auto px-4">
+          <div className="text-center mb-14">
+            <span className="text-xs font-bold uppercase tracking-widest text-amber-400 bg-amber-400/10 px-4 py-1.5 rounded-full">Premium Araçlar</span>
+            <h2 className="text-3xl md:text-4xl font-black text-white mt-4">Araç Filomuz</h2>
+            <p className="text-gray-400 mt-3 max-w-xl mx-auto">Her ihtiyaca uygun, özenle bakımlı premium araçlarla konforlu yolculuk.</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[
+              {
+                img: "/vehicles/vito.png",
+                name: "Mercedes Vito",
+                badge: "En Çok Tercih",
+                capacity: "6 Yolcu",
+                luggage: "6 Bavul",
+                features: ["Klima", "USB Şarj", "Su İkramı"],
+              },
+              {
+                img: "/vehicles/sprinter.png",
+                name: "Mercedes Sprinter",
+                badge: "Grup Transferi",
+                capacity: "8 Yolcu",
+                luggage: "8 Bavul",
+                features: ["Klima", "USB Şarj", "Geniş İç Alan"],
+              },
+              {
+                img: "/vehicles/sclass.png",
+                name: "Mercedes S-Class",
+                badge: "Ultra Lüks",
+                capacity: "3 Yolcu",
+                luggage: "3 Bavul",
+                features: ["Deri Koltuk", "Masaj", "Minibar"],
+              },
+            ].map((v) => (
+              <div key={v.name} className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden hover:border-amber-400/50 transition-all group">
+                <div className="relative h-52 bg-slate-800">
+                  <Image src={v.img} alt={v.name} fill className="object-contain p-4 group-hover:scale-105 transition-transform duration-500" />
+                  <span className="absolute top-3 left-3 bg-amber-500 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider">{v.badge}</span>
+                </div>
+                <div className="p-6">
+                  <h3 className="text-white font-bold text-lg">{v.name}</h3>
+                  <div className="flex gap-4 mt-2 text-sm text-gray-400">
+                    <span className="flex items-center gap-1"><Users size={13} /> {v.capacity}</span>
+                    <span className="flex items-center gap-1"><Car size={13} /> {v.luggage}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2 mt-4">
+                    {v.features.map(f => (
+                      <span key={f} className="text-xs bg-white/10 text-gray-300 px-3 py-1 rounded-full">{f}</span>
+                    ))}
+                  </div>
+                  <a
+                    href={`/booking?vehicle=${encodeURIComponent(v.name)}`}
+                    className="mt-5 w-full flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-xl text-sm transition-colors"
+                  >
+                    Fiyat Al <ArrowRight size={15} />
+                  </a>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ===================== POPÜLER ROTALAR ===================== */}
+      <section className="bg-gray-50 py-20">
+        <div className="max-w-5xl mx-auto px-4">
+          <div className="text-center mb-14">
+            <span className="text-xs font-bold uppercase tracking-widest text-amber-500 bg-amber-50 px-4 py-1.5 rounded-full">Sık Tercih Edilenler</span>
+            <h2 className="text-3xl md:text-4xl font-black text-slate-900 mt-4">Popüler Rotalar</h2>
+            <p className="text-gray-500 mt-3 max-w-xl mx-auto">İstanbul'un en çok talep gören transfer güzergahları.</p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[
+              { from: "İstanbul Havalimanı", to: "Taksim",         fromCode: "IST", icon: <Plane size={14}/> },
+              { from: "İstanbul Havalimanı", to: "Sultanahmet",    fromCode: "IST", icon: <Plane size={14}/> },
+              { from: "İstanbul Havalimanı", to: "Kadıköy",        fromCode: "IST", icon: <Plane size={14}/> },
+              { from: "İstanbul Havalimanı", to: "Beşiktaş",       fromCode: "IST", icon: <Plane size={14}/> },
+              { from: "Sabiha Gökçen",       to: "Taksim",         fromCode: "SAW", icon: <Plane size={14}/> },
+              { from: "Sabiha Gökçen",       to: "Sultanahmet",    fromCode: "SAW", icon: <Plane size={14}/> },
+            ].map((route) => (
+              <a
+                key={`${route.from}-${route.to}`}
+                href={`/booking?pickup=${encodeURIComponent(route.from)}&pickupName=${encodeURIComponent(route.from)}&dropoff=${encodeURIComponent(route.to)}&dropoffName=${encodeURIComponent(route.to)}&type=transfer`}
+                className="flex items-center justify-between bg-white border border-gray-200 rounded-2xl p-5 hover:border-amber-400 hover:shadow-md transition-all group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 shrink-0">
+                    {route.icon}
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-400 font-medium">{route.fromCode}</div>
+                    <div className="font-bold text-slate-900 text-sm leading-tight">{route.from}</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Route size={16} className="text-amber-400 shrink-0" />
+                  <div className="text-right">
+                    <div className="font-bold text-slate-900 text-sm">{route.to}</div>
+                    <div className="text-xs text-amber-500 font-medium group-hover:underline">Fiyat Al →</div>
+                  </div>
+                </div>
+              </a>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ===================== CTA ===================== */}
+      <section className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 py-24 relative overflow-hidden">
+        {/* Dekoratif arka plan */}
+        <div className="absolute inset-0 opacity-10 bg-[radial-gradient(ellipse_at_top_right,_#f59e0b,_transparent_60%)]" />
+        <div className="relative z-10 max-w-3xl mx-auto px-4 text-center">
+          <Award size={48} className="text-amber-400 mx-auto mb-6" />
+          <h2 className="text-3xl md:text-5xl font-black text-white leading-tight mb-6">
+            Ayrıcalıklı Transferinizi<br />
+            <span className="text-amber-400">Hemen Planlayın</span>
+          </h2>
+          <p className="text-gray-400 text-lg mb-10 leading-relaxed">
+            İstanbul Havalimanı ve Sabiha Gökçen'den 7/24 lüks transfer.<br />
+            Anında fiyat, anında onay.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <a
+              href="/booking"
+              className="inline-flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-400 text-white font-bold px-8 py-4 rounded-2xl text-lg shadow-xl shadow-amber-500/25 transition-all hover:-translate-y-1"
+            >
+              <Search size={20} /> Hemen Rezervasyon Yap
+            </a>
+            <a
+              href="https://wa.me/905441459199"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold px-8 py-4 rounded-2xl text-lg transition-all"
+            >
+              <PhoneCall size={20} /> WhatsApp&apos;tan Ulaşın
+            </a>
+          </div>
+        </div>
+      </section>
+
     </main>
   );
 }

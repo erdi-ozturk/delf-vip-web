@@ -1,7 +1,7 @@
 "use client"
 
-import { useSearchParams } from "next/navigation"
-import { useState } from "react"
+import { useSearchParams, useRouter } from "next/navigation"
+import { useState, useEffect, useTransition } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { 
@@ -11,6 +11,7 @@ import {
 
 export default function CheckoutPage() {
   const searchParams = useSearchParams()
+  const router = useRouter()
 
   // --- URL'DEN VERİLERİ ÇEKME ---
   const bookingType = searchParams.get("type") || "transfer"; // 'transfer' veya 'hourly'
@@ -30,15 +31,43 @@ export default function CheckoutPage() {
   const returnDateStr = searchParams.get("returnDate");
   const vehicle = searchParams.get("vehicle") || "Araç Seçilmedi";
   const price = searchParams.get("price") || "0 ₺";
+  const roundTrip = searchParams.get("roundTrip") || "false";
   const passengers = searchParams.get("passengers") || "1";
+
+  // --- SUNUCU TARAFLI FİYAT DOĞRULAMA ---
+  const [serverPriceUsd, setServerPriceUsd] = useState<number | null>(null);
+  const [priceLoading, setPriceLoading] = useState(true);
+
+  useEffect(() => {
+    const params = new URLSearchParams({
+      vehicle,
+      type: bookingType,
+      roundTrip,
+      duration,
+      pickup: pickupAddr,
+      dropoff: dropoffAddr,
+    });
+    fetch(`/api/calculate-price?${params.toString()}`)
+      .then((r) => r.json())
+      .then((data) => { if (data.priceUsd) setServerPriceUsd(data.priceUsd); })
+      .catch(() => {})
+      .finally(() => setPriceLoading(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Güvenli fiyat: sunucudan gelen USD fiyatı, yoksa URL parametresine dön
+  const displayPrice = serverPriceUsd ? `$${serverPriceUsd}` : price;
 
   // --- FORM STATE ---
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
     email: "",
+    flightCode: "",
     note: ""
   });
+  const [formError, setFormError] = useState("");
+  const [isPending, startTransition] = useTransition();
 
   // --- TARİH FORMATLAMA ---
   const formatDate = (dateString: string | null) => {
@@ -60,32 +89,74 @@ export default function CheckoutPage() {
 
   // --- WHATSAPP MESAJI ---
   const handleWhatsAppClick = () => {
-    const typeLabel = bookingType === 'hourly' ? "SAATLİK TAHSİS" : "TRANSFER";
-    
-    const message = `
-*Merhaba, Web Sitenizden Yeni ${typeLabel} Talebi!* 🚐✨
+    setFormError("");
 
-*👤 İletişim Bilgileri:*
-Ad Soyad: ${formData.name || "Belirtilmedi"}
-Telefon: ${formData.phone || "Belirtilmedi"}
+    if (!formData.name.trim()) {
+      setFormError("Lütfen adınızı ve soyadınızı girin.");
+      return;
+    }
+    if (!formData.phone.trim()) {
+      setFormError("Lütfen telefon numaranızı girin.");
+      return;
+    }
 
-*📍 Rezervasyon Detayları:*
-Nereden: ${pickupName} (${pickupAddr})
-Nereye: ${dropoffName} (${dropoffAddr})
-${bookingType === 'hourly' ? `Kiralama Süresi: ${duration}` : ""}
-Tarih: ${formatDate(dateStr)}
-${returnDateStr ? `Dönüş Tarihi: ${formatDate(returnDateStr)}` : ""}
-Yolcu Sayısı: ${passengers} Kişi
+    startTransition(async () => {
+      // Veritabanına kaydet (hata olsa bile WhatsApp açılmaya devam eder)
+      try {
+        await fetch("/api/reservations", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: formData.name,
+            phone: formData.phone,
+            email: formData.email,
+            note: formData.note,
+            bookingType,
+            pickupName,
+            pickupAddr,
+            dropoffName,
+            dropoffAddr,
+            date: dateStr,
+            returnDate: returnDateStr,
+            duration,
+            passengers,
+            vehicle,
+            price: displayPrice,
+          }),
+        });
+      } catch (_) {
+        // Kayıt hatası WhatsApp'ı engellemez
+      }
 
-*🚐 Araç & Tutar:*
-Araç: ${vehicle}
-Tutar: ${price}
+      const typeLabel = bookingType === 'hourly' ? "Saatlik Tahsis" : "Transfer";
+      const lines = [
+        `*Yeni ${typeLabel} Talebi - DELF VIP*`,
+        ``,
+        `*Musteri Bilgileri*`,
+        `Ad Soyad: ${formData.name}`,
+        `Telefon: ${formData.phone}`,
+        formData.email ? `E-Posta: ${formData.email}` : null,
+        formData.flightCode ? `Ucus Kodu: ${formData.flightCode}` : null,
+        ``,
+        `*Guzergah*`,
+        `Nereden: ${pickupName}`,
+        `Nereye: ${dropoffName}`,
+        bookingType === 'hourly' ? `Sure: ${duration}` : null,
+        `Tarih: ${formatDate(dateStr)}`,
+        returnDateStr ? `Donus Tarihi: ${formatDate(returnDateStr)}` : null,
+        `Yolcu: ${passengers} kisi`,
+        ``,
+        `*Arac ve Ucret*`,
+        `Arac: ${vehicle}`,
+        `Tutar: ${displayPrice}`,
+        formData.note ? `\nNot: ${formData.note}` : null,
+      ].filter(Boolean).join("\n");
+      const message = lines;
 
-*📝 Not:* ${formData.note || "Yok"}
-    `.trim();
-
-    const encodedMessage = encodeURIComponent(message);
-    window.open(`https://wa.me/905441459199?text=${encodedMessage}`, '_blank');
+      const encodedMessage = encodeURIComponent(message);
+      window.open(`https://wa.me/905441459199?text=${encodedMessage}`, '_blank');
+      router.push("/tesekkurler");
+    });
   };
 
   return (
@@ -170,7 +241,11 @@ Tutar: ${price}
                 {/* Fiyat */}
                 <div className="flex justify-between items-end border-t border-gray-100 pt-6">
                     <span className="text-sm text-gray-500 font-medium">Toplam Tutar</span>
-                    <span className="text-3xl font-bold text-slate-900 text-right">{price}</span>
+                    {priceLoading ? (
+                      <span className="text-lg font-bold text-gray-300 animate-pulse">Hesaplanıyor...</span>
+                    ) : (
+                      <span className="text-3xl font-bold text-slate-900 text-right">{displayPrice}</span>
+                    )}
                 </div>
 
               </div>
@@ -235,10 +310,12 @@ Tutar: ${price}
                     <div className="space-y-2">
                         <label className="text-xs font-bold text-gray-500 uppercase">Uçuş Kodu (Varsa)</label>
                         <div className="relative">
-                            <input 
-                                type="text" 
-                                placeholder="Örn: TK1923" 
+                            <input
+                                type="text"
+                                placeholder="Örn: TK1923"
                                 className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 outline-none transition-all text-sm font-bold text-slate-900"
+                                value={formData.flightCode}
+                                onChange={(e) => setFormData({...formData, flightCode: e.target.value})}
                             />
                             <Plane className="absolute left-3 top-3 text-gray-400" size={18} />
                         </div>
@@ -272,12 +349,20 @@ Tutar: ${price}
                 </div>
 
                 <div className="mt-8">
-                    <button 
+                    {formError && (
+                        <div className="mb-4 flex items-center gap-2 bg-red-50 border border-red-100 text-red-600 text-sm font-bold px-4 py-3 rounded-xl">
+                            <AlertCircle size={18} className="shrink-0" />
+                            {formError}
+                        </div>
+                    )}
+                    <button
+                        type="button"
                         onClick={handleWhatsAppClick}
-                        className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-green-500/30 transition-all flex items-center justify-center gap-2 hover:-translate-y-1"
+                        disabled={isPending || priceLoading}
+                        className="w-full bg-green-500 hover:bg-green-600 disabled:opacity-60 text-white font-bold py-4 rounded-xl shadow-lg shadow-green-500/30 transition-all flex items-center justify-center gap-2 hover:-translate-y-1"
                     >
                         <MessageSquare size={24} />
-                        WhatsApp ile Onayla & Bitir
+                        {isPending ? "Kaydediliyor..." : "WhatsApp ile Onayla & Bitir"}
                     </button>
                     <p className="text-center text-xs text-gray-400 mt-4">
                         Butona tıkladığınızda WhatsApp uygulaması açılacak ve bilgileriniz bize iletilecektir. Operatörümüz hemen dönüş yapacaktır.

@@ -1,3 +1,16 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Kullanım Koşulları",
+  description: "DELF VIP Transfer kullanım koşulları: rezervasyon, iptal, iade politikası ve hizmet şartları.",
+  robots: { index: false },
+  openGraph: {
+    title: "Kullanım Koşulları | DELF VIP Transfer",
+    description: "Rezervasyon, iptal ve iade politikası dahil tüm hizmet şartlarımızı öğrenin.",
+    url: "https://www.delfvip.com/terms",
+  },
+};
+
 export default function TermsPage() {
   return (
     <main className="bg-gray-50 min-h-screen pb-20">

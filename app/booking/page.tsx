@@ -96,6 +96,24 @@ export default function BookingSelectionPage() {
             initAutocomplete();
         }
     }, 100);
+    // İlçe/şehir bilgisini ekleyerek kısa ama anlamlı bir isim oluşturur
+    const buildDisplayName = (place: any): string => {
+      const name = place.name || "";
+      const components: any[] = place.address_components || [];
+      const district = components.find((c: any) =>
+        c.types.includes("sublocality_level_1") ||
+        c.types.includes("administrative_area_level_2")
+      )?.long_name;
+      const city = components.find((c: any) =>
+        c.types.includes("locality") ||
+        c.types.includes("administrative_area_level_1")
+      )?.long_name;
+      if (!name) return place.formatted_address || "";
+      if (city && name.toLowerCase().includes(city.toLowerCase())) return name;
+      const suffix = district && city ? `${district}/${city}` : city;
+      return suffix ? `${name}, ${suffix}` : name;
+    };
+
     const initAutocomplete = () => {
       const options = { componentRestrictions: { country: "tr" } };
       if (pickupInputRef.current) {
@@ -103,8 +121,8 @@ export default function BookingSelectionPage() {
          fromAutocomplete.addListener("place_changed", () => {
             const place = fromAutocomplete.getPlace();
             if (!place.geometry) { setIsFromValid(false); return; }
-            setFrom(place.name || place.formatted_address);
-            setFromFullAddress(place.formatted_address || ""); 
+            setFrom(buildDisplayName(place));
+            setFromFullAddress(place.formatted_address || "");
             setIsFromValid(true); setErrors(prev => ({...prev, from: false}));
          });
       }
@@ -113,7 +131,7 @@ export default function BookingSelectionPage() {
          toAutocomplete.addListener("place_changed", () => {
             const place = toAutocomplete.getPlace();
             if (!place.geometry) { setIsToValid(false); return; }
-            setTo(place.name || place.formatted_address);
+            setTo(buildDisplayName(place));
             setToFullAddress(place.formatted_address || "");
             setIsToValid(true); setErrors(prev => ({...prev, to: false}));
          });

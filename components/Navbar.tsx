@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { Menu, X, Phone } from "lucide-react"
+import { Menu, X } from "lucide-react"
 import LanguageSwitcher from "./LanguageSwitcher";
 
 export default function Navbar() {
@@ -97,19 +97,6 @@ export default function Navbar() {
         )}
       </header>
 
-      {/* WhatsApp Butonu */}
-      <Link
-        href="https://wa.me/905441459199"
-        target="_blank"
-        className="fixed bottom-6 right-6 z-50 bg-green-500 hover:bg-green-600 text-white p-4 rounded-full shadow-2xl shadow-green-500/40 transition-all hover:-translate-y-1 hover:scale-110 flex items-center justify-center animate-bounce-slow"
-        aria-label="WhatsApp"
-      >
-        <Phone size={28} fill="currentColor" className="text-white" />
-        <span className="absolute -top-1 -right-1 flex h-4 w-4">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-          <span className="relative inline-flex rounded-full h-4 w-4 bg-red-500"></span>
-        </span>
-      </Link>
     </>
   )
 }

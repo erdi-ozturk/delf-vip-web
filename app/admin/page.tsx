@@ -45,6 +45,12 @@ export default function AdminDashboard() {
             <h2 className="text-xl font-bold mb-2 text-gray-700">📈 Fiyat Çarpanları</h2>
             <p className="text-gray-500 text-sm">Saatlik (4h, 8h, 12h) kiralama çarpanlarını ayarla.</p>
           </Link>
+
+          {/* Rezervasyonlar Kartı */}
+          <Link href="/admin/reservations" className="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow border-l-4 border-purple-500">
+            <h2 className="text-xl font-bold mb-2 text-gray-700">📋 Rezervasyonlar</h2>
+            <p className="text-gray-500 text-sm">Gelen tüm rezervasyonları görüntüle ve durumlarını yönet.</p>
+          </Link>
         </div>
       </div>
     </div>

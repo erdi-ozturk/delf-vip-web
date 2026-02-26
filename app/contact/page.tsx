@@ -1,4 +1,16 @@
-import { Mail, MapPin, Phone, Send } from "lucide-react"
+import type { Metadata } from "next"
+import { Mail, MapPin, Phone } from "lucide-react"
+import ContactForm from "./ContactForm"
+
+export const metadata: Metadata = {
+  title: "İletişim",
+  description: "DELF VIP ile iletişime geçin. 7/24 rezervasyon hattı, WhatsApp destek ve İstanbul ofis bilgileri.",
+  openGraph: {
+    title: "İletişim | DELF VIP Transfer",
+    description: "DELF VIP ile iletişime geçin. 7/24 rezervasyon hattı ve WhatsApp destek.",
+    url: "https://www.delfvip.com/contact",
+  },
+};
 
 export default function ContactPage() {
   return (
@@ -45,7 +57,7 @@ export default function ContactPage() {
                     <MapPin size={24} />
                 </div>
                 <h3 className="font-bold text-slate-900 mb-2">Merkez Ofis</h3>
-                <p className="text-gray-500 text-sm mb-4">Ziyaret saatleri: 09:00 - 18:00</p>
+                <p className="text-gray-500 text-sm mb-4">7/24 Hizmet Noktası</p>
                 <p className="text-slate-800 font-medium text-sm px-4">İstanbul Havalimanı Yolu Üzeri, Arnavutköy/İSTANBUL</p>
             </div>
 
@@ -70,19 +82,7 @@ export default function ContactPage() {
             {/* Sağ: İletişim Formu */}
             <div className="p-8 lg:p-12">
                 <h2 className="text-2xl font-bold text-slate-900 mb-6">Bize Mesaj Gönderin</h2>
-                <form className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                        <input type="text" placeholder="Adınız" className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 outline-none focus:border-amber-500 transition-colors" />
-                        <input type="text" placeholder="Soyadınız" className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 outline-none focus:border-amber-500 transition-colors" />
-                    </div>
-                    <input type="email" placeholder="E-Posta Adresiniz" className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 outline-none focus:border-amber-500 transition-colors" />
-                    <input type="text" placeholder="Konu" className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 outline-none focus:border-amber-500 transition-colors" />
-                    <textarea rows={4} placeholder="Mesajınız..." className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 outline-none focus:border-amber-500 transition-colors"></textarea>
-                    
-                    <button type="button" className="w-full bg-slate-900 text-white font-bold py-4 rounded-xl hover:bg-slate-800 transition-all flex items-center justify-center gap-2">
-                        Gönder <Send size={18} />
-                    </button>
-                </form>
+                <ContactForm />
             </div>
 
         </div>

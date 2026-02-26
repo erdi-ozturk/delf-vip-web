@@ -15,7 +15,7 @@ export default function WeglotScript() {
             try {
                 // @ts-ignore
                 window.Weglot.initialize({
-                    api_key: 'wg_be12a961f5b5b28d2780a1e0255e4aba7',
+                    api_key: process.env.NEXT_PUBLIC_WEGLOT_API_KEY || '',
                     hide_switcher: false, // GİZLEME! (Çalıştığını görmek için)
                     switchers: [
                         {

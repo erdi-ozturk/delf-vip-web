@@ -1,3 +1,16 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Gizlilik Politikası",
+  description: "DELF VIP Transfer gizlilik politikası: kişisel verilerinizin nasıl toplandığı, kullanıldığı ve korunduğu hakkında bilgi.",
+  robots: { index: false },
+  openGraph: {
+    title: "Gizlilik Politikası | DELF VIP Transfer",
+    description: "Kişisel verilerinizin güvenliği ve gizliliği hakkında bilgi edinin.",
+    url: "https://www.delfvip.com/privacy",
+  },
+};
+
 export default function PrivacyPage() {
   return (
     <main className="bg-gray-50 min-h-screen pb-20">

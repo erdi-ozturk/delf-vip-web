@@ -1,6 +1,17 @@
+import type { Metadata } from "next"
 import Image from "next/image"
 import Link from "next/link"
 import { Plane, Map, Clock, Briefcase, Star, MapPin, CheckCircle2, ArrowRight, ShieldCheck, Gem } from "lucide-react"
+
+export const metadata: Metadata = {
+  title: "Hizmetlerimiz",
+  description: "DELF VIP Transfer hizmetleri: havalimanı karşılama, şehirlerarası transfer, saatlik araç kiralama, kurumsal seyahat, gelin arabası ve özel şehir turları.",
+  openGraph: {
+    title: "Hizmetlerimiz | DELF VIP Transfer",
+    description: "İstanbul'da VIP transfer, saatlik araç kiralama ve kurumsal ulaşım çözümleri.",
+    url: "https://www.delfvip.com/services",
+  },
+};
 
 export default function ServicesPage() {
   
