@@ -124,6 +124,52 @@ export async function POST(request: NextRequest) {
       }).catch((err) => console.error("Mail gönderilemedi:", err));
     }
 
+    // Müşteriye onay e-postası (e-posta girdiyse)
+    const customerEmail = email?.trim();
+    if (process.env.RESEND_API_KEY && customerEmail) {
+      const typeLabel = bookingType === "hourly" ? "Saatlik Tahsis" : "Transfer";
+      await resend.emails.send({
+        from: "DELF VIP <noreply@delfvip.com>",
+        to: customerEmail,
+        subject: `Rezervasyonunuz Alındı ✓ — DELF VIP`,
+        html: `
+          <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f9f9f9;padding:24px;border-radius:12px;">
+            <div style="background:#1e293b;color:white;padding:20px 24px;border-radius:8px 8px 0 0;text-align:center;">
+              <h1 style="margin:0;font-size:22px;">✅ Rezervasyonunuz Alındı</h1>
+              <p style="margin:6px 0 0;font-size:13px;opacity:0.7;">DELF VIP Transfer</p>
+            </div>
+            <div style="background:white;padding:24px;border-radius:0 0 8px 8px;border:1px solid #e2e8f0;border-top:none;">
+              <p style="font-size:15px;color:#1e293b;">Sayın <strong>${name}</strong>,</p>
+              <p style="font-size:14px;color:#475569;">Rezervasyon talebiniz alınmıştır. En kısa sürede ekibimiz sizinle iletişime geçecektir.</p>
+
+              <table style="width:100%;border-collapse:collapse;font-size:14px;margin-top:16px;">
+                <tr><td colspan="2" style="padding:8px 0;font-weight:bold;color:#f59e0b;border-bottom:2px solid #fef3c7;">📍 Yolculuk Detayları</td></tr>
+                <tr><td style="padding:6px 0;color:#64748b;width:140px;">Hizmet</td><td style="padding:6px 0;font-weight:bold;">${typeLabel}</td></tr>
+                <tr><td style="padding:6px 0;color:#64748b;">Nereden</td><td style="padding:6px 0;">${pickupAddr}</td></tr>
+                <tr><td style="padding:6px 0;color:#64748b;">Nereye</td><td style="padding:6px 0;">${dropoffAddr}</td></tr>
+                <tr><td style="padding:6px 0;color:#64748b;">Tarih</td><td style="padding:6px 0;font-weight:bold;">${formatDate(date)}</td></tr>
+                ${returnDate ? `<tr><td style="padding:6px 0;color:#64748b;">Dönüş</td><td style="padding:6px 0;">${formatDate(returnDate)}</td></tr>` : ""}
+                ${duration ? `<tr><td style="padding:6px 0;color:#64748b;">Süre</td><td style="padding:6px 0;">${duration}</td></tr>` : ""}
+                <tr><td style="padding:6px 0;color:#64748b;">Yolcu</td><td style="padding:6px 0;">${passengers} kişi</td></tr>
+                <tr><td style="padding:6px 0;color:#64748b;">Araç</td><td style="padding:6px 0;font-weight:bold;">${vehicle}</td></tr>
+                <tr><td style="padding:6px 0;color:#64748b;">Tutar</td><td style="padding:6px 0;font-weight:bold;font-size:16px;color:#16a34a;">${price}</td></tr>
+              </table>
+
+              <div style="margin-top:20px;padding:16px;background:#fffbeb;border-radius:8px;border:1px solid #fde68a;">
+                <p style="margin:0;font-size:13px;color:#92400e;">📞 Herhangi bir sorunuz için 7/24 ulaşabilirsiniz:</p>
+                <p style="margin:6px 0 0;font-size:18px;font-weight:bold;color:#1e293b;">+90 544 145 91 99</p>
+              </div>
+
+              <p style="font-size:12px;color:#94a3b8;margin-top:20px;text-align:center;">
+                Rezervasyon No: ${reservation.id}<br/>
+                Bu e-posta otomatik olarak gönderilmiştir, lütfen yanıtlamayın.
+              </p>
+            </div>
+          </div>
+        `,
+      }).catch((err) => console.error("Müşteri maili gönderilemedi:", err));
+    }
+
     return NextResponse.json({ ok: true, id: reservation.id }, { status: 201 });
   } catch (error) {
     console.error("Rezervasyon kaydedilemedi:", error);
