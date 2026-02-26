@@ -68,67 +68,69 @@ export default function Home() {
       returnDate: false
   });
 
+  // Autocomplete suggestions
+  const [fromSuggestions, setFromSuggestions] = useState<any[]>([]);
+  const [toSuggestions, setToSuggestions] = useState<any[]>([]);
+  const [showFromSug, setShowFromSug] = useState(false);
+  const [showToSug, setShowToSug] = useState(false);
+
   const startDatePickerRef = useRef<any>(null);
   const returnDatePickerRef = useRef<any>(null);
   const fromInputRef = useRef<HTMLInputElement>(null);
   const toInputRef = useRef<HTMLInputElement>(null);
+  const autocompleteServiceRef = useRef<any>(null);
+  const placesServiceRef = useRef<any>(null);
 
-  // 🔥 GOOGLE MAPS BAĞLANTISI (GÜNCELLENDİ: GARANTİLİ YÖNTEM)
+  // 🔥 GOOGLE MAPS — PlaceAutocompleteElement kullanılmayan yeni API
   useEffect(() => {
-    // Google Maps API'nin yüklenmesini bekle
+    if (autocompleteServiceRef.current) return;
     const waitForGoogle = setInterval(() => {
-        if (window.google && window.google.maps && window.google.maps.places) {
-            clearInterval(waitForGoogle);
-            initAutocomplete();
-        }
-    }, 100); // 100ms'de bir kontrol et
-
-    const initAutocomplete = () => {
-      const options = { componentRestrictions: { country: "tr" } };
-
-      if (fromInputRef.current) {
-         // Önceki listenerları temizle (tekrar tekrar çalışmasın)
-         const newNode = fromInputRef.current.cloneNode(true);
-         if(fromInputRef.current.parentNode) fromInputRef.current.parentNode.replaceChild(newNode, fromInputRef.current);
-         // @ts-ignore
-         fromInputRef.current = newNode;
-
-         // Yeni Autocomplete bağla
-         const fromAutocomplete = new window.google.maps.places.Autocomplete(fromInputRef.current as HTMLInputElement, options);
-         fromAutocomplete.addListener("place_changed", () => {
-            const place = fromAutocomplete.getPlace();
-            const shortName = place.name || place.formatted_address;
-            const fullAddr = place.formatted_address || "";
-            setFromLocation(shortName);
-            setFromFullAddress(fullAddr); 
-            setErrors(prev => ({...prev, from: false}));
-            if(fromInputRef.current) fromInputRef.current.value = shortName;
-         });
+      if (window.google?.maps?.places?.AutocompleteService) {
+        clearInterval(waitForGoogle);
+        autocompleteServiceRef.current = new window.google.maps.places.AutocompleteService();
+        const div = document.createElement("div");
+        placesServiceRef.current = new window.google.maps.places.PlacesService(div);
       }
-
-      if (toInputRef.current) {
-         // Önceki listenerları temizle
-         const newNode = toInputRef.current.cloneNode(true);
-         if(toInputRef.current.parentNode) toInputRef.current.parentNode.replaceChild(newNode, toInputRef.current);
-         // @ts-ignore
-         toInputRef.current = newNode;
-
-         const toAutocomplete = new window.google.maps.places.Autocomplete(toInputRef.current as HTMLInputElement, options);
-         toAutocomplete.addListener("place_changed", () => {
-            const place = toAutocomplete.getPlace();
-            const shortName = place.name || place.formatted_address;
-            const fullAddr = place.formatted_address || "";
-            setToLocation(shortName);
-            setToFullAddress(fullAddr);
-            setErrors(prev => ({...prev, to: false}));
-            if(toInputRef.current) toInputRef.current.value = shortName;
-         });
-      }
-    };
-
-    // Temizlik
+    }, 100);
     return () => clearInterval(waitForGoogle);
-  }, [activeTab]); 
+  }, []);
+
+  const getPredictions = (value: string, setSugs: (s: any[]) => void, setShow: (b: boolean) => void) => {
+    if (!value || value.length < 2 || !autocompleteServiceRef.current) {
+      setSugs([]); setShow(false); return;
+    }
+    autocompleteServiceRef.current.getPlacePredictions(
+      { input: value, componentRestrictions: { country: "tr" } },
+      (predictions: any[] | null, status: string) => {
+        if (status === "OK" && predictions?.length) {
+          setSugs(predictions); setShow(true);
+        } else { setSugs([]); setShow(false); }
+      }
+    );
+  };
+
+  const selectPlace = (
+    prediction: any,
+    setLoc: (s: string) => void,
+    setFull: (s: string) => void,
+    inputRef: React.RefObject<HTMLInputElement | null>,
+    setShow: (b: boolean) => void,
+    setSugs: (s: any[]) => void,
+    clearErr: () => void
+  ) => {
+    const name = prediction.structured_formatting?.main_text || prediction.description;
+    setLoc(name);
+    setFull("");
+    setShow(false); setSugs([]);
+    if (inputRef.current) inputRef.current.value = name;
+    clearErr();
+    placesServiceRef.current?.getDetails(
+      { placeId: prediction.place_id, fields: ["formatted_address"] },
+      (place: any, status: string) => {
+        if (status === "OK") setFull(place?.formatted_address || "");
+      }
+    );
+  };
 
   // --- MANTIK ---
   const handleStartSelect = (date: Date | null) => {
@@ -291,17 +293,19 @@ export default function Home() {
             <div className="p-6 md:p-8 flex flex-col lg:flex-row gap-5 items-center lg:items-stretch">
               
               {/* 1. NEREDEN */}
-              <div className={`w-full lg:flex-1 shrink-0 border rounded-2xl transition-all group h-24 min-w-[200px] relative overflow-hidden ${errors.from ? 'border-red-500 bg-red-50 shadow-md' : 'border-gray-200 bg-white hover:border-amber-400 hover:shadow-lg'}`}>
-                 <input 
-                    ref={fromInputRef} 
-                    type="text" 
-                    placeholder="Havalimanı, Otel..." 
-                    className="absolute inset-0 w-full h-full bg-transparent outline-none text-xs md:text-sm font-bold text-slate-900 placeholder:text-gray-400 pl-12 pt-4 pb-3 z-10 cursor-text"
+              <div className={`w-full lg:flex-1 shrink-0 border rounded-2xl transition-all group h-24 min-w-[200px] relative ${errors.from ? 'border-red-500 bg-red-50 shadow-md' : 'border-gray-200 bg-white hover:border-amber-400 hover:shadow-lg'}`}>
+                 <input
+                    ref={fromInputRef}
+                    type="text"
+                    placeholder="Havalimanı, Otel..."
+                    className="absolute inset-0 w-full h-full bg-transparent outline-none text-xs md:text-sm font-bold text-slate-900 placeholder:text-gray-400 pl-12 pt-4 pb-3 z-10 cursor-text rounded-2xl"
                     onChange={(e) => {
                         setFromLocation(e.target.value);
                         setFromFullAddress("");
                         if(e.target.value) setErrors(prev => ({...prev, from: false}));
-                    }} 
+                        getPredictions(e.target.value, setFromSuggestions, setShowFromSug);
+                    }}
+                    onBlur={() => setTimeout(() => setShowFromSug(false), 150)}
                  />
                  <div className={`absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none z-0 ${errors.from ? 'text-red-500' : 'text-green-600'}`}>
                     {errors.from ? <AlertCircle size={20}/> : <MapPin size={20} />}
@@ -312,6 +316,22 @@ export default function Home() {
                  <div className="absolute bottom-3 left-12 right-4 text-[10px] text-gray-400 truncate pointer-events-none z-0">
                     {fromFullAddress || (errors.from ? <span className="text-red-400 font-bold">Lütfen konum seçiniz</span> : "Şehir, İlçe veya Mahalle Seçiniz")}
                  </div>
+                 {showFromSug && fromSuggestions.length > 0 && (
+                   <ul className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl shadow-2xl border border-gray-100 z-[9999] overflow-hidden">
+                     {fromSuggestions.map((pred) => (
+                       <li key={pred.place_id}
+                         onMouseDown={(e) => { e.preventDefault(); selectPlace(pred, setFromLocation, setFromFullAddress, fromInputRef, setShowFromSug, setFromSuggestions, () => setErrors(prev => ({...prev, from: false}))); }}
+                         className="px-4 py-3 hover:bg-amber-50 cursor-pointer text-sm border-b border-gray-50 last:border-0 flex items-center gap-3"
+                       >
+                         <MapPin size={14} className="text-amber-500 shrink-0" />
+                         <div>
+                           <div className="font-medium text-slate-800">{pred.structured_formatting?.main_text}</div>
+                           <div className="text-xs text-gray-400">{pred.structured_formatting?.secondary_text}</div>
+                         </div>
+                       </li>
+                     ))}
+                   </ul>
+                 )}
               </div>
 
               {activeTab === 'transfer' && (
@@ -338,17 +358,19 @@ export default function Home() {
               )}
 
               {/* 2. NEREYE */}
-              <div className={`w-full lg:flex-1 shrink-0 border rounded-2xl transition-all group h-24 min-w-[200px] relative overflow-hidden ${errors.to ? 'border-red-500 bg-red-50 shadow-md' : 'border-gray-200 bg-white hover:border-amber-400 hover:shadow-lg'}`}>
-                 <input 
-                    ref={toInputRef} 
-                    type="text" 
-                    placeholder="Varış Noktası..." 
-                    className="absolute inset-0 w-full h-full bg-transparent outline-none text-xs md:text-sm font-bold text-slate-900 placeholder:text-gray-400 pl-12 pt-4 pb-3 z-10 cursor-text"
+              <div className={`w-full lg:flex-1 shrink-0 border rounded-2xl transition-all group h-24 min-w-[200px] relative ${errors.to ? 'border-red-500 bg-red-50 shadow-md' : 'border-gray-200 bg-white hover:border-amber-400 hover:shadow-lg'}`}>
+                 <input
+                    ref={toInputRef}
+                    type="text"
+                    placeholder="Varış Noktası..."
+                    className="absolute inset-0 w-full h-full bg-transparent outline-none text-xs md:text-sm font-bold text-slate-900 placeholder:text-gray-400 pl-12 pt-4 pb-3 z-10 cursor-text rounded-2xl"
                     onChange={(e) => {
                         setToLocation(e.target.value);
                         setToFullAddress("");
                         if(e.target.value) setErrors(prev => ({...prev, to: false}));
-                    }} 
+                        getPredictions(e.target.value, setToSuggestions, setShowToSug);
+                    }}
+                    onBlur={() => setTimeout(() => setShowToSug(false), 150)}
                  />
                  <div className={`absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none z-0 ${errors.to ? 'text-red-500' : 'text-blue-600'}`}>
                     {errors.to ? <AlertCircle size={20}/> : <MapPin size={20} />}
@@ -359,6 +381,22 @@ export default function Home() {
                  <div className="absolute bottom-3 left-12 right-4 text-[10px] text-gray-400 truncate pointer-events-none z-0">
                     {toFullAddress || (errors.to ? <span className="text-red-400 font-bold">Lütfen varış noktası seçiniz</span> : "Varış Noktası Seçiniz")}
                  </div>
+                 {showToSug && toSuggestions.length > 0 && (
+                   <ul className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl shadow-2xl border border-gray-100 z-[9999] overflow-hidden">
+                     {toSuggestions.map((pred) => (
+                       <li key={pred.place_id}
+                         onMouseDown={(e) => { e.preventDefault(); selectPlace(pred, setToLocation, setToFullAddress, toInputRef, setShowToSug, setToSuggestions, () => setErrors(prev => ({...prev, to: false}))); }}
+                         className="px-4 py-3 hover:bg-amber-50 cursor-pointer text-sm border-b border-gray-50 last:border-0 flex items-center gap-3"
+                       >
+                         <MapPin size={14} className="text-amber-500 shrink-0" />
+                         <div>
+                           <div className="font-medium text-slate-800">{pred.structured_formatting?.main_text}</div>
+                           <div className="text-xs text-gray-400">{pred.structured_formatting?.secondary_text}</div>
+                         </div>
+                       </li>
+                     ))}
+                   </ul>
+                 )}
               </div>
 
               {/* 3. TARİH ALANI */}

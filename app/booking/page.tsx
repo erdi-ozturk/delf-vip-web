@@ -68,12 +68,20 @@ export default function BookingSelectionPage() {
   const [isStartTimeMode, setIsStartTimeMode] = useState(false);
   const [isReturnTimeMode, setIsReturnTimeMode] = useState(false);
 
+  // Autocomplete suggestions
+  const [pickupSuggestions, setPickupSuggestions] = useState<any[]>([]);
+  const [dropoffSuggestions, setDropoffSuggestions] = useState<any[]>([]);
+  const [showPickupSug, setShowPickupSug] = useState(false);
+  const [showDropoffSug, setShowDropoffSug] = useState(false);
+
   const isDataReady = !isEditing && isFromValid && isToValid && from && to && date !== null && (isRoundTrip ? returnDate !== null : true);
 
   const pickupInputRef = useRef<HTMLInputElement>(null);
   const dropoffInputRef = useRef<HTMLInputElement>(null);
   const startDatePickerRef = useRef<any>(null);
   const returnDatePickerRef = useRef<any>(null);
+  const autocompleteServiceRef = useRef<any>(null);
+  const placesServiceRef = useRef<any>(null);
 
   useEffect(() => {
     async function fetchRates() {
@@ -88,57 +96,59 @@ export default function BookingSelectionPage() {
     fetchRates();
   }, []);
 
+  // Google Maps servislerini yükle (bir kez)
   useEffect(() => {
-    if (!isEditing) return;
+    if (autocompleteServiceRef.current) return;
     const waitForGoogle = setInterval(() => {
-        if (window.google && window.google.maps && window.google.maps.places) {
-            clearInterval(waitForGoogle);
-            initAutocomplete();
-        }
+      if (window.google?.maps?.places?.AutocompleteService) {
+        clearInterval(waitForGoogle);
+        autocompleteServiceRef.current = new window.google.maps.places.AutocompleteService();
+        const div = document.createElement("div");
+        placesServiceRef.current = new window.google.maps.places.PlacesService(div);
+      }
     }, 100);
-    // İlçe/şehir bilgisini ekleyerek kısa ama anlamlı bir isim oluşturur
-    const buildDisplayName = (place: any): string => {
-      const name = place.name || "";
-      const components: any[] = place.address_components || [];
-      const district = components.find((c: any) =>
-        c.types.includes("sublocality_level_1") ||
-        c.types.includes("administrative_area_level_2")
-      )?.long_name;
-      const city = components.find((c: any) =>
-        c.types.includes("locality") ||
-        c.types.includes("administrative_area_level_1")
-      )?.long_name;
-      if (!name) return place.formatted_address || "";
-      if (city && name.toLowerCase().includes(city.toLowerCase())) return name;
-      const suffix = district && city ? `${district}/${city}` : city;
-      return suffix ? `${name}, ${suffix}` : name;
-    };
-
-    const initAutocomplete = () => {
-      const options = { componentRestrictions: { country: "tr" } };
-      if (pickupInputRef.current) {
-         const fromAutocomplete = new window.google.maps.places.Autocomplete(pickupInputRef.current, options);
-         fromAutocomplete.addListener("place_changed", () => {
-            const place = fromAutocomplete.getPlace();
-            if (!place.geometry) { setIsFromValid(false); return; }
-            setFrom(buildDisplayName(place));
-            setFromFullAddress(place.formatted_address || "");
-            setIsFromValid(true); setErrors(prev => ({...prev, from: false}));
-         });
-      }
-      if (dropoffInputRef.current) {
-         const toAutocomplete = new window.google.maps.places.Autocomplete(dropoffInputRef.current, options);
-         toAutocomplete.addListener("place_changed", () => {
-            const place = toAutocomplete.getPlace();
-            if (!place.geometry) { setIsToValid(false); return; }
-            setTo(buildDisplayName(place));
-            setToFullAddress(place.formatted_address || "");
-            setIsToValid(true); setErrors(prev => ({...prev, to: false}));
-         });
-      }
-    };
     return () => clearInterval(waitForGoogle);
-  }, [isEditing]);
+  }, []);
+
+  const getPredictions = (value: string, setSugs: (s: any[]) => void, setShow: (b: boolean) => void) => {
+    if (!value || value.length < 2 || !autocompleteServiceRef.current) {
+      setSugs([]); setShow(false); return;
+    }
+    autocompleteServiceRef.current.getPlacePredictions(
+      { input: value, componentRestrictions: { country: "tr" } },
+      (predictions: any[] | null, status: string) => {
+        if (status === "OK" && predictions?.length) {
+          setSugs(predictions); setShow(true);
+        } else { setSugs([]); setShow(false); }
+      }
+    );
+  };
+
+  const selectPlace = (
+    prediction: any,
+    setLoc: (s: string) => void,
+    setFull: (s: string) => void,
+    setValid: (b: boolean) => void,
+    setShow: (b: boolean) => void,
+    setSugs: (s: any[]) => void,
+    clearErr: () => void
+  ) => {
+    const name = prediction.structured_formatting?.main_text || prediction.description;
+    setLoc(name);
+    setFull("");
+    setValid(false);
+    setShow(false); setSugs([]);
+    clearErr();
+    placesServiceRef.current?.getDetails(
+      { placeId: prediction.place_id, fields: ["formatted_address", "name"] },
+      (place: any, status: string) => {
+        if (status === "OK" && place) {
+          setFull(place.formatted_address || "");
+          setValid(true);
+        }
+      }
+    );
+  };
 
   const handleStartSelect = (d: Date | null) => {
     if (!d) return;
@@ -266,15 +276,73 @@ export default function BookingSelectionPage() {
                                 </div>
                             )}
                             <div className="relative group">
-                                <MapPin className={`absolute left-3 top-3.5 ${errors.from ? 'text-red-500' : 'text-green-600'}`} size={18} />
-                                <div className={`absolute left-9 top-1.5 text-[9px] font-bold uppercase ${errors.from ? 'text-red-400' : 'text-gray-400'}`}>NEREDEN</div>
-                                <input ref={pickupInputRef} type="text" defaultValue={from} onChange={(e) => { setFrom(e.target.value); setIsFromValid(false); if(e.target.value) setErrors(p => ({...p, from: false})); }} className={`w-full pl-9 pt-4 pb-2 text-sm font-bold text-slate-900 border rounded-xl outline-none transition-all ${errors.from ? 'border-red-500 bg-red-50' : 'border-gray-200 focus:border-amber-500'}`} placeholder="Konum seçiniz" />
+                                <MapPin className={`absolute left-3 top-3.5 z-10 ${errors.from ? 'text-red-500' : 'text-green-600'}`} size={18} />
+                                <div className={`absolute left-9 top-1.5 text-[9px] font-bold uppercase z-10 pointer-events-none ${errors.from ? 'text-red-400' : 'text-gray-400'}`}>NEREDEN</div>
+                                <input
+                                  ref={pickupInputRef}
+                                  type="text"
+                                  defaultValue={from}
+                                  onChange={(e) => {
+                                    setFrom(e.target.value);
+                                    setIsFromValid(false);
+                                    if(e.target.value) setErrors(p => ({...p, from: false}));
+                                    getPredictions(e.target.value, setPickupSuggestions, setShowPickupSug);
+                                  }}
+                                  onBlur={() => setTimeout(() => setShowPickupSug(false), 150)}
+                                  className={`w-full pl-9 pt-4 pb-2 text-sm font-bold text-slate-900 border rounded-xl outline-none transition-all ${errors.from ? 'border-red-500 bg-red-50' : 'border-gray-200 focus:border-amber-500'}`}
+                                  placeholder="Konum seçiniz"
+                                />
+                                {showPickupSug && pickupSuggestions.length > 0 && (
+                                  <ul className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl shadow-2xl border border-gray-100 z-[9999] overflow-hidden">
+                                    {pickupSuggestions.map((pred) => (
+                                      <li key={pred.place_id}
+                                        onMouseDown={(e) => { e.preventDefault(); selectPlace(pred, setFrom, setFromFullAddress, setIsFromValid, setShowPickupSug, setPickupSuggestions, () => setErrors(p => ({...p, from: false}))); }}
+                                        className="px-4 py-3 hover:bg-amber-50 cursor-pointer text-sm border-b border-gray-50 last:border-0 flex items-center gap-3"
+                                      >
+                                        <MapPin size={14} className="text-amber-500 shrink-0" />
+                                        <div>
+                                          <div className="font-medium text-slate-800">{pred.structured_formatting?.main_text}</div>
+                                          <div className="text-xs text-gray-400">{pred.structured_formatting?.secondary_text}</div>
+                                        </div>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                )}
                             </div>
 
                             <div className="relative group">
-                                <MapPin className={`absolute left-3 top-3.5 ${errors.to ? 'text-red-500' : 'text-blue-600'}`} size={18} />
-                                <div className={`absolute left-9 top-1.5 text-[9px] font-bold uppercase ${errors.to ? 'text-red-400' : 'text-gray-400'}`}>NEREYE</div>
-                                <input ref={dropoffInputRef} type="text" defaultValue={to} onChange={(e) => { setTo(e.target.value); setIsToValid(false); if(e.target.value) setErrors(p => ({...p, to: false})); }} className={`w-full pl-9 pt-4 pb-2 text-sm font-bold text-slate-900 border rounded-xl outline-none transition-all ${errors.to ? 'border-red-500 bg-red-50' : 'border-gray-200 focus:border-amber-500'}`} placeholder="Konum seçiniz" />
+                                <MapPin className={`absolute left-3 top-3.5 z-10 ${errors.to ? 'text-red-500' : 'text-blue-600'}`} size={18} />
+                                <div className={`absolute left-9 top-1.5 text-[9px] font-bold uppercase z-10 pointer-events-none ${errors.to ? 'text-red-400' : 'text-gray-400'}`}>NEREYE</div>
+                                <input
+                                  ref={dropoffInputRef}
+                                  type="text"
+                                  defaultValue={to}
+                                  onChange={(e) => {
+                                    setTo(e.target.value);
+                                    setIsToValid(false);
+                                    if(e.target.value) setErrors(p => ({...p, to: false}));
+                                    getPredictions(e.target.value, setDropoffSuggestions, setShowDropoffSug);
+                                  }}
+                                  onBlur={() => setTimeout(() => setShowDropoffSug(false), 150)}
+                                  className={`w-full pl-9 pt-4 pb-2 text-sm font-bold text-slate-900 border rounded-xl outline-none transition-all ${errors.to ? 'border-red-500 bg-red-50' : 'border-gray-200 focus:border-amber-500'}`}
+                                  placeholder="Konum seçiniz"
+                                />
+                                {showDropoffSug && dropoffSuggestions.length > 0 && (
+                                  <ul className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl shadow-2xl border border-gray-100 z-[9999] overflow-hidden">
+                                    {dropoffSuggestions.map((pred) => (
+                                      <li key={pred.place_id}
+                                        onMouseDown={(e) => { e.preventDefault(); selectPlace(pred, setTo, setToFullAddress, setIsToValid, setShowDropoffSug, setDropoffSuggestions, () => setErrors(p => ({...p, to: false}))); }}
+                                        className="px-4 py-3 hover:bg-amber-50 cursor-pointer text-sm border-b border-gray-50 last:border-0 flex items-center gap-3"
+                                      >
+                                        <MapPin size={14} className="text-amber-500 shrink-0" />
+                                        <div>
+                                          <div className="font-medium text-slate-800">{pred.structured_formatting?.main_text}</div>
+                                          <div className="text-xs text-gray-400">{pred.structured_formatting?.secondary_text}</div>
+                                        </div>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                )}
                             </div>
 
                             <div className="flex gap-2">
