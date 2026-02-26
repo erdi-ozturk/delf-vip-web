@@ -5,8 +5,8 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: '*',
       allow: '/',
-      disallow: '/private/', // Gizlemek istediğin yer varsa
+      disallow: ['/admin/', '/api/', '/private/'],
     },
-    sitemap: 'https://delfvip.com/sitemap.xml',
+    sitemap: 'https://www.delfvip.com/sitemap.xml',
   }
 }
