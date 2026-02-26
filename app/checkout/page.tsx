@@ -67,6 +67,7 @@ export default function CheckoutPage() {
     note: ""
   });
   const [formError, setFormError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({ name: "", phone: "", email: "" });
   const [isPending, startTransition] = useTransition();
 
   // --- TARİH FORMATLAMA ---
@@ -90,15 +91,27 @@ export default function CheckoutPage() {
   // --- WHATSAPP MESAJI ---
   const handleWhatsAppClick = () => {
     setFormError("");
+    const errors = { name: "", phone: "", email: "" };
+    let hasError = false;
 
-    if (!formData.name.trim()) {
-      setFormError("Lütfen adınızı ve soyadınızı girin.");
-      return;
+    if (!formData.name.trim() || formData.name.trim().length < 2) {
+      errors.name = "Adınızı ve soyadınızı giriniz.";
+      hasError = true;
     }
-    if (!formData.phone.trim()) {
-      setFormError("Lütfen telefon numaranızı girin.");
-      return;
+
+    const phoneDigits = formData.phone.replace(/[\s\-\(\)\+]/g, "");
+    if (!phoneDigits || phoneDigits.length < 7 || !/^\d+$/.test(phoneDigits)) {
+      errors.phone = "Geçerli bir telefon numarası giriniz (min. 7 rakam).";
+      hasError = true;
     }
+
+    if (formData.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
+      errors.email = "Geçerli bir e-posta adresi giriniz.";
+      hasError = true;
+    }
+
+    setFieldErrors(errors);
+    if (hasError) return;
 
     startTransition(async () => {
       // Veritabanına kaydet (hata olsa bile WhatsApp açılmaya devam eder)
@@ -266,45 +279,48 @@ export default function CheckoutPage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                     <div className="space-y-2">
-                        <label className="text-xs font-bold text-gray-500 uppercase">Adınız Soyadınız</label>
+                        <label className="text-xs font-bold text-gray-500 uppercase">Adınız Soyadınız <span className="text-red-400">*</span></label>
                         <div className="relative">
-                            <input 
-                                type="text" 
-                                placeholder="Örn: Ahmet Yılmaz" 
-                                className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 outline-none transition-all text-sm font-bold text-slate-900"
+                            <input
+                                type="text"
+                                placeholder="Örn: Ahmet Yılmaz"
+                                className={`w-full pl-10 pr-4 py-3 rounded-xl border focus:ring-2 outline-none transition-all text-sm font-bold text-slate-900 ${fieldErrors.name ? "border-red-400 focus:border-red-400 focus:ring-red-100 bg-red-50" : "border-gray-200 focus:border-amber-500 focus:ring-amber-200"}`}
                                 value={formData.name}
-                                onChange={(e) => setFormData({...formData, name: e.target.value})}
+                                onChange={(e) => { setFormData({...formData, name: e.target.value}); setFieldErrors(p => ({...p, name: ""})); }}
                             />
-                            <User className="absolute left-3 top-3 text-gray-400" size={18} />
+                            <User className={`absolute left-3 top-3 ${fieldErrors.name ? "text-red-400" : "text-gray-400"}`} size={18} />
                         </div>
+                        {fieldErrors.name && <p className="text-xs text-red-500 font-semibold">{fieldErrors.name}</p>}
                     </div>
 
                     <div className="space-y-2">
-                        <label className="text-xs font-bold text-gray-500 uppercase">Telefon Numaranız</label>
+                        <label className="text-xs font-bold text-gray-500 uppercase">Telefon Numaranız <span className="text-red-400">*</span></label>
                         <div className="relative">
-                            <input 
-                                type="tel" 
-                                placeholder="+90 555 ..." 
-                                className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 outline-none transition-all text-sm font-bold text-slate-900"
+                            <input
+                                type="tel"
+                                placeholder="+90 555 ..."
+                                className={`w-full pl-10 pr-4 py-3 rounded-xl border focus:ring-2 outline-none transition-all text-sm font-bold text-slate-900 ${fieldErrors.phone ? "border-red-400 focus:border-red-400 focus:ring-red-100 bg-red-50" : "border-gray-200 focus:border-amber-500 focus:ring-amber-200"}`}
                                 value={formData.phone}
-                                onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                                onChange={(e) => { setFormData({...formData, phone: e.target.value}); setFieldErrors(p => ({...p, phone: ""})); }}
                             />
-                            <Phone className="absolute left-3 top-3 text-gray-400" size={18} />
+                            <Phone className={`absolute left-3 top-3 ${fieldErrors.phone ? "text-red-400" : "text-gray-400"}`} size={18} />
                         </div>
+                        {fieldErrors.phone && <p className="text-xs text-red-500 font-semibold">{fieldErrors.phone}</p>}
                     </div>
 
                     <div className="space-y-2">
-                        <label className="text-xs font-bold text-gray-500 uppercase">E-Posta Adresi</label>
+                        <label className="text-xs font-bold text-gray-500 uppercase">E-Posta Adresi <span className="text-gray-400 normal-case font-normal">(opsiyonel)</span></label>
                         <div className="relative">
-                            <input 
-                                type="email" 
-                                placeholder="ornek@email.com" 
-                                className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 outline-none transition-all text-sm font-bold text-slate-900"
+                            <input
+                                type="email"
+                                placeholder="ornek@email.com"
+                                className={`w-full pl-10 pr-4 py-3 rounded-xl border focus:ring-2 outline-none transition-all text-sm font-bold text-slate-900 ${fieldErrors.email ? "border-red-400 focus:border-red-400 focus:ring-red-100 bg-red-50" : "border-gray-200 focus:border-amber-500 focus:ring-amber-200"}`}
                                 value={formData.email}
-                                onChange={(e) => setFormData({...formData, email: e.target.value})}
+                                onChange={(e) => { setFormData({...formData, email: e.target.value}); setFieldErrors(p => ({...p, email: ""})); }}
                             />
-                            <Mail className="absolute left-3 top-3 text-gray-400" size={18} />
+                            <Mail className={`absolute left-3 top-3 ${fieldErrors.email ? "text-red-400" : "text-gray-400"}`} size={18} />
                         </div>
+                        {fieldErrors.email && <p className="text-xs text-red-500 font-semibold">{fieldErrors.email}</p>}
                     </div>
 
                     <div className="space-y-2">
