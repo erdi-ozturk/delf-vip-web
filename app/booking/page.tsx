@@ -485,16 +485,17 @@ export default function BookingSelectionPage() {
             ) : (
                 <div className="space-y-6">
                         {vehicles.map((v) => (
-                        <VehicleCard 
-                        key={v.id} 
-                        vehicle={v} 
-                        rates={rates} 
-                        // Her iki değeri de Boolean() içine alarak kesinleştiriyoruz
-                        isRoundTrip={Boolean(isRoundTrip)} 
-                        bookingType={bookingType} 
-                        duration={duration} 
-                        onSelect={handleSelect} 
-                        isDataReady={Boolean(isDataReady)} // 👈 BURAYI BU ŞEKİLDE GÜNCELLE
+                        <VehicleCard
+                        key={v.id}
+                        vehicle={v}
+                        rates={rates}
+                        isRoundTrip={Boolean(isRoundTrip)}
+                        bookingType={bookingType}
+                        duration={duration}
+                        onSelect={handleSelect}
+                        isDataReady={Boolean(isDataReady)}
+                        pickup={fromFullAddress || from}
+                        dropoff={toFullAddress || to}
                         />
                     ))}
                 </div>
@@ -507,48 +508,59 @@ export default function BookingSelectionPage() {
   )
 }
 
-// ✅ DÜZELTİLEN: VehicleCard parametreleri güncellendi ve fiyat hesaplama eklendi
-function VehicleCard({ 
-  vehicle, 
-  rates, 
-  isRoundTrip, 
-  bookingType, 
-  duration, 
-  onSelect, 
-  isDataReady 
-}: { 
-  vehicle: any, 
-  rates: any, 
-  isRoundTrip: boolean, 
-  bookingType: string, 
-  duration: string, 
-  onSelect: any, 
-  isDataReady: boolean 
+function VehicleCard({
+  vehicle,
+  rates,
+  isRoundTrip,
+  bookingType,
+  duration,
+  onSelect,
+  isDataReady,
+  pickup,
+  dropoff
+}: {
+  vehicle: any,
+  rates: any,
+  isRoundTrip: boolean,
+  bookingType: string,
+  duration: string,
+  onSelect: any,
+  isDataReady: boolean,
+  pickup: string,
+  dropoff: string
 }) {
     const [currency, setCurrency] = useState<"TRY" | "USD" | "EUR" | "GBP">("TRY");
     const symbols = { TRY: "₺", USD: "$", EUR: "€", GBP: "£" };
-    
-    // ✅ Fiyat hesaplama mantığı eklendi
-    let finalUsdPrice = vehicle.basePriceUsd;
+    const [apiPriceUsd, setApiPriceUsd] = useState<number | null>(null);
 
-    if (bookingType === 'transfer') {
-      finalUsdPrice = isRoundTrip ? vehicle.basePriceUsd * 2 : vehicle.basePriceUsd;
-    } else {
-      // Saatlik tahsis çarpanları
-      const multipliers: Record<string, number> = {
-        "4 Saat": 1,
-        "8 Saat": 1.8,
-        "10 Saat": 2.2,
-        "12 Saat": 2.5
-      };
-      finalUsdPrice = vehicle.basePriceUsd * (multipliers[duration] || 1);
-    }
+    useEffect(() => {
+      if (!isDataReady || !pickup || !dropoff || pickup === "Konum Belirtilmedi" || dropoff === "Konum Belirtilmedi") return;
+      const params = new URLSearchParams({
+        vehicle: vehicle.name,
+        type: bookingType,
+        pickup,
+        dropoff,
+        roundTrip: isRoundTrip ? "true" : "false",
+        duration,
+      });
+      fetch(`/api/calculate-price?${params}`)
+        .then(r => r.json())
+        .then(data => { if (data.priceUsd) setApiPriceUsd(data.priceUsd); })
+        .catch(() => {});
+    }, [vehicle.name, bookingType, pickup, dropoff, isRoundTrip, duration, isDataReady]);
 
-    const prices = { 
-      TRY: Math.round(finalUsdPrice * rates.TRY), 
-      EUR: Math.round(finalUsdPrice * rates.EUR), 
-      USD: Math.round(finalUsdPrice), 
-      GBP: Math.round(finalUsdPrice * rates.GBP) 
+    // API fiyatı varsa onu kullan, yoksa basePriceUsd ile fallback
+    const multipliers: Record<string, number> = { "4 Saat": 1, "8 Saat": 1.8, "10 Saat": 2.2, "12 Saat": 2.5 };
+    const fallbackPrice = bookingType === 'hourly'
+      ? vehicle.basePriceUsd * (multipliers[duration] || 1)
+      : isRoundTrip ? vehicle.basePriceUsd * 2 : vehicle.basePriceUsd;
+    const finalUsdPrice = apiPriceUsd ?? fallbackPrice;
+
+    const prices = {
+      TRY: Math.round(finalUsdPrice * rates.TRY),
+      EUR: Math.round(finalUsdPrice * rates.EUR),
+      USD: Math.round(finalUsdPrice),
+      GBP: Math.round(finalUsdPrice * rates.GBP)
     }
     const selectedPriceStr = `${prices[currency]} ${symbols[currency]}`
 
