@@ -545,7 +545,10 @@ function VehicleCard({
       });
       fetch(`/api/calculate-price?${params}`)
         .then(r => r.json())
-        .then(data => { if (data.priceUsd) setApiPriceUsd(data.priceUsd); })
+        .then(data => {
+          console.log(`[VehicleCard] ${vehicle.name} | source=${data.source} | route=${data.route ?? '-'} | priceUsd=${data.priceUsd}`);
+          if (data.priceUsd) setApiPriceUsd(data.priceUsd);
+        })
         .catch(() => {});
     }, [vehicle.name, bookingType, pickup, dropoff, isRoundTrip, duration, isDataReady]);
 

@@ -42,13 +42,15 @@ const ZONE_KEYWORDS: Record<string, string[]> = {
 };
 
 // Türkçe karakterleri normalize et
+// ÖNEMLİ: Büyük harfli Türkçe karakterler (İ,Ğ,Ü,Ş,Ö,Ç) toLowerCase'den ÖNCE değiştirilmeli,
+// aksi hâlde "İ" → toLowerCase → "i\u0307" (2 karakter) olur ve replace çalışmaz.
 function normalize(str: string): string {
   return str
+    .replace(/İ/g, "i").replace(/Ğ/g, "g").replace(/Ü/g, "u")
+    .replace(/Ş/g, "s").replace(/Ö/g, "o").replace(/Ç/g, "c")
     .toLowerCase()
     .replace(/ğ/g, "g").replace(/ü/g, "u").replace(/ş/g, "s")
-    .replace(/ı/g, "i").replace(/ö/g, "o").replace(/ç/g, "c")
-    .replace(/İ/g, "i").replace(/Ğ/g, "g").replace(/Ü/g, "u")
-    .replace(/Ş/g, "s").replace(/Ö/g, "o").replace(/Ç/g, "c");
+    .replace(/ı/g, "i").replace(/ö/g, "o").replace(/ç/g, "c");
 }
 
 // Adresin hangi bölgeye ait olduğunu bul
@@ -102,7 +104,10 @@ export async function GET(request: NextRequest) {
     if (bookingType === "transfer" && vehicleType && pickup && dropoff) {
       const allRoutes = await db.fixedRoute.findMany({
         where: { vehicleType: { contains: vehicleType, mode: "insensitive" } },
+        orderBy: { id: "asc" },
       });
+
+      console.log(`[calculate-price] ${vehicleType} | pickup="${pickup}" | dropoff="${dropoff}" | routes found: ${allRoutes.length}`);
 
       // Normal yön: pickup → dropoff
       const matched = allRoutes.find(
@@ -110,7 +115,8 @@ export async function GET(request: NextRequest) {
       );
       if (matched) {
         const price = roundTrip ? matched.priceUsd * 2 : matched.priceUsd;
-        return NextResponse.json({ priceUsd: Math.round(price), source: "fixed" });
+        console.log(`[calculate-price] MATCHED: ${matched.fromLocation} → ${matched.toLocation} = $${matched.priceUsd}`);
+        return NextResponse.json({ priceUsd: Math.round(price), source: "fixed", route: `${matched.fromLocation}→${matched.toLocation}` });
       }
 
       // Ters yön: dropoff → pickup (otel → havalimanı transferi)
@@ -119,8 +125,14 @@ export async function GET(request: NextRequest) {
       );
       if (matchedReverse) {
         const price = roundTrip ? matchedReverse.priceUsd * 2 : matchedReverse.priceUsd;
-        return NextResponse.json({ priceUsd: Math.round(price), source: "fixed" });
+        console.log(`[calculate-price] MATCHED REVERSE: ${matchedReverse.fromLocation} → ${matchedReverse.toLocation} = $${matchedReverse.priceUsd}`);
+        return NextResponse.json({ priceUsd: Math.round(price), source: "fixed-reverse", route: `${matchedReverse.fromLocation}→${matchedReverse.toLocation}` });
       }
+
+      console.log(`[calculate-price] NO ZONE MATCH for pickup="${normalize(pickup)}" dropoff="${normalize(dropoff)}"`);
+      allRoutes.forEach(r => {
+        console.log(`  route: ${r.fromLocation}→${r.toLocation} | fromMatch=${matchZone(pickup,r.fromLocation)} toMatch=${matchZone(dropoff,r.toLocation)}`);
+      });
     }
 
     // ── 2. Aracı DB'den al ──────────────────────────────────────────────────
