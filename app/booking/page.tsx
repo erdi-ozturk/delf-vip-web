@@ -588,6 +588,7 @@ function VehicleCard({
       setApiPriceUsd(null);
       setPriceSource(null);
       setPriceDistanceKm(null);
+      const controller = new AbortController();
       const params = new URLSearchParams({
         vehicle: vehicle.name,
         type: bookingType,
@@ -597,7 +598,7 @@ function VehicleCard({
         duration,
         ...(clientDistanceKm !== null ? { distanceKm: String(clientDistanceKm) } : {}),
       });
-      fetch(`/api/calculate-price?${params}`)
+      fetch(`/api/calculate-price?${params}`, { signal: controller.signal })
         .then(r => r.json())
         .then(data => {
           console.log(`[VehicleCard] ${vehicle.name} | source=${data.source} | route=${data.route ?? '-'} | priceUsd=${data.priceUsd} | distanceKm=${data.distanceKm ?? '-'}`);
@@ -611,7 +612,8 @@ function VehicleCard({
             setPriceStatus("unavailable");
           }
         })
-        .catch(() => setPriceStatus("unavailable"));
+        .catch(err => { if (err.name !== "AbortError") setPriceStatus("unavailable"); });
+      return () => controller.abort();
     }, [vehicle.name, bookingType, pickup, dropoff, isRoundTrip, duration, isDataReady, clientDistanceKm]);
 
     const finalUsdPrice = apiPriceUsd ?? 0;
