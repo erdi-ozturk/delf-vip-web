@@ -138,8 +138,11 @@ export async function GET(request: NextRequest) {
     }
 
     // ── 2. Aracı DB'den al ──────────────────────────────────────────────────
+    // Önce tam isimle ara (en güvenilir), bulamazsa vehicleType ile ara
     const vehicle = await db.vehicle.findFirst({
-      where: { name: { contains: vehicleType ?? vehicleName.split(" ")[0], mode: "insensitive" } },
+      where: { name: { equals: vehicleName, mode: "insensitive" } },
+    }) ?? await db.vehicle.findFirst({
+      where: { name: { contains: vehicleType ?? vehicleName, mode: "insensitive" } },
     });
     if (!vehicle) {
       return NextResponse.json({ error: "Araç bulunamadı" }, { status: 404 });
