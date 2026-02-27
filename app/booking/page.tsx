@@ -119,10 +119,12 @@ export default function BookingSelectionPage() {
 
   // Adresler değişince mesafeyi tarayıcıdan hesapla (sunucu key'i referrer kısıtlı)
   // isGoogleMapsReady da dependency'de: Maps geç yüklenirse sayfa URL param'larıyla açıldığında da tetiklenir
+  // ignore flag: React StrictMode'da effect 2x çalışır; stale callback'lerin state'i bozmasını engeller
   useEffect(() => {
+    let ignore = false;
     if (!isGoogleMapsReady || !fromFullAddress || !toFullAddress || !isFromValid || !isToValid) {
       if (isGoogleMapsReady && (!fromFullAddress || !toFullAddress)) setClientDistanceKm(null);
-      return;
+      return () => { ignore = true; };
     }
     distanceMatrixServiceRef.current.getDistanceMatrix(
       {
@@ -131,6 +133,7 @@ export default function BookingSelectionPage() {
         travelMode: window.google.maps.TravelMode.DRIVING,
       },
       (response: any, status: string) => {
+        if (ignore) return;
         if (status === "OK") {
           const meters = response?.rows?.[0]?.elements?.[0]?.distance?.value;
           if (typeof meters === "number") {
@@ -145,6 +148,7 @@ export default function BookingSelectionPage() {
         }
       }
     );
+    return () => { ignore = true; };
   }, [fromFullAddress, toFullAddress, isFromValid, isToValid, isGoogleMapsReady]);
 
   const getPredictions = (value: string, setSugs: (s: any[]) => void, setShow: (b: boolean) => void) => {
