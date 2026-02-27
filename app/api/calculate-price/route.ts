@@ -65,7 +65,10 @@ function matchZone(address: string, zoneName: string): boolean {
 // Google Distance Matrix ile iki adres arası mesafeyi km olarak al
 async function getDistanceKm(origin: string, destination: string): Promise<number | null> {
   const apiKey = process.env.GOOGLE_MAPS_API_KEY;
-  if (!apiKey) return null;
+  if (!apiKey) {
+    console.warn("[getDistanceKm] GOOGLE_MAPS_API_KEY tanımlı değil — mesafe hesaplaması atlandı");
+    return null;
+  }
   try {
     const url =
       `https://maps.googleapis.com/maps/api/distancematrix/json` +
@@ -74,10 +77,27 @@ async function getDistanceKm(origin: string, destination: string): Promise<numbe
       `&key=${apiKey}`;
     const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
     const data = await res.json();
-    const meters = data?.rows?.[0]?.elements?.[0]?.distance?.value;
-    if (typeof meters !== "number") return null;
-    return meters / 1000;
-  } catch {
+
+    // API seviyesi hata kontrolü (REQUEST_DENIED, INVALID_REQUEST vb.)
+    if (data.status && data.status !== "OK") {
+      console.error(`[getDistanceKm] API hatası: status=${data.status} | error_message=${data.error_message ?? "-"}`);
+      return null;
+    }
+    const element = data?.rows?.[0]?.elements?.[0];
+    if (element?.status && element.status !== "OK") {
+      console.error(`[getDistanceKm] Element hatası: status=${element.status} | origin="${origin}" dest="${destination}"`);
+      return null;
+    }
+    const meters = element?.distance?.value;
+    if (typeof meters !== "number") {
+      console.warn(`[getDistanceKm] Mesafe değeri yok | origin="${origin}" dest="${destination}"`);
+      return null;
+    }
+    const km = meters / 1000;
+    console.log(`[getDistanceKm] ${Math.round(km)} km | origin="${origin.slice(0, 60)}" dest="${destination.slice(0, 60)}"`);
+    return km;
+  } catch (err) {
+    console.error("[getDistanceKm] fetch hatası:", err);
     return null;
   }
 }

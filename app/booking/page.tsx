@@ -535,11 +535,15 @@ function VehicleCard({
     const symbols = { TRY: "₺", USD: "$", EUR: "€", GBP: "£" };
     const [apiPriceUsd, setApiPriceUsd] = useState<number | null>(null);
     const [priceStatus, setPriceStatus] = useState<"loading" | "found" | "unavailable">("loading");
+    const [priceSource, setPriceSource] = useState<string | null>(null);
+    const [priceDistanceKm, setPriceDistanceKm] = useState<number | null>(null);
 
     useEffect(() => {
       if (!isDataReady || !pickup || !dropoff || pickup === "Konum Belirtilmedi" || dropoff === "Konum Belirtilmedi") return;
       setPriceStatus("loading");
       setApiPriceUsd(null);
+      setPriceSource(null);
+      setPriceDistanceKm(null);
       const params = new URLSearchParams({
         vehicle: vehicle.name,
         type: bookingType,
@@ -551,10 +555,12 @@ function VehicleCard({
       fetch(`/api/calculate-price?${params}`)
         .then(r => r.json())
         .then(data => {
-          console.log(`[VehicleCard] ${vehicle.name} | source=${data.source} | route=${data.route ?? '-'} | priceUsd=${data.priceUsd}`);
+          console.log(`[VehicleCard] ${vehicle.name} | source=${data.source} | route=${data.route ?? '-'} | priceUsd=${data.priceUsd} | distanceKm=${data.distanceKm ?? '-'}`);
           // source=base → hesaplanamadı (taban fiyat fallback), gerçek fiyat değil
           if (data.priceUsd && data.source !== "base") {
             setApiPriceUsd(data.priceUsd);
+            setPriceSource(data.source);
+            setPriceDistanceKm(data.distanceKm ?? null);
             setPriceStatus("found");
           } else {
             setPriceStatus("unavailable");
@@ -610,7 +616,7 @@ function VehicleCard({
                                 ))}
                             </div>
                             <div className="flex items-center gap-4 w-full sm:w-auto justify-end">
-                                <div className="text-right hidden md:block"><span className="block text-2xl font-bold text-slate-900 leading-none">{selectedPriceStr}</span><span className="text-[10px] text-gray-400">Toplam Fiyat</span></div>
+                                <div className="text-right hidden md:block"><span className="block text-2xl font-bold text-slate-900 leading-none">{selectedPriceStr}</span><span className="text-[10px] text-gray-400">{priceSource === "distance" && priceDistanceKm ? `~${priceDistanceKm} km · Tahmini fiyat` : "Toplam Fiyat"}</span></div>
                                 <button onClick={() => onSelect(vehicle.name, selectedPriceStr)} className="bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 px-6 rounded-xl shadow-md transition-all text-sm whitespace-nowrap">Seç <ArrowRight size={16} className="inline ml-1"/></button>
                             </div>
                         </>
