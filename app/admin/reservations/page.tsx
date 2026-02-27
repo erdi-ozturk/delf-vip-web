@@ -2,6 +2,7 @@ import { db } from "../../lib/db";
 import { revalidatePath } from "next/cache";
 import { Phone, MapPin, Calendar, Car, User, CheckCircle, XCircle, Clock, Trash2 } from "lucide-react";
 import DeleteButton from "../components/DeleteButton";
+import AdminShell from "../components/AdminShell";
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   new:       { label: "Yeni",      color: "bg-blue-100 text-blue-700" },
@@ -32,16 +33,12 @@ export default async function AdminReservationsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 p-6">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-800">Rezervasyonlar</h1>
-            <p className="text-sm text-gray-500 mt-1">Toplam: {reservations.length} rezervasyon</p>
-          </div>
-          <a href="/admin" className="text-sm font-bold text-gray-500 hover:text-gray-800 border border-gray-200 bg-white px-4 py-2 rounded-xl transition-colors">
-            ← Panele Dön
-          </a>
+    <AdminShell>
+    <div className="p-8">
+      <div className="max-w-5xl">
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold text-slate-900">Rezervasyonlar</h1>
+          <p className="text-sm text-slate-500 mt-1">Toplam {reservations.length} rezervasyon</p>
         </div>
 
         {reservations.length === 0 ? (
@@ -148,5 +145,6 @@ export default async function AdminReservationsPage() {
         )}
       </div>
     </div>
+    </AdminShell>
   );
 }

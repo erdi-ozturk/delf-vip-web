@@ -2,6 +2,8 @@ import { db } from "../../lib/db";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import DeleteButton from "../components/DeleteButton";
+import AdminShell from "../components/AdminShell";
+import { ArrowRight } from "lucide-react";
 
 interface FixedRoute {
   id: string;
@@ -11,13 +13,18 @@ interface FixedRoute {
   vehicleType: string;
 }
 
+const INPUT = "w-full px-3 py-2.5 text-sm border border-slate-200 rounded-lg outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-50 transition-all placeholder:text-slate-400";
+const LABEL = "block text-xs font-semibold text-slate-600 mb-1.5";
+
+const VEHICLE_OPTIONS = ["Vito", "Sprinter", "S-Class"];
+
 export default async function AdminRoutesPage({
   searchParams,
 }: {
   searchParams: Promise<{ edit?: string }>;
 }) {
   const { edit } = await searchParams;
-  const routes = await db.fixedRoute.findMany();
+  const routes = await db.fixedRoute.findMany({ orderBy: { vehicleType: "asc" } });
   const editingRoute = edit ? routes.find((r: FixedRoute) => r.id === edit) : null;
 
   async function addRoute(formData: FormData) {
@@ -49,10 +56,7 @@ export default async function AdminRoutesPage({
     if (isNaN(price) || price < 0 || price > 100000) return;
     if (!vehicleType || vehicleType.length > 100) return;
 
-    await db.fixedRoute.update({
-      where: { id },
-      data: { fromLocation, toLocation, priceUsd: price, vehicleType },
-    });
+    await db.fixedRoute.update({ where: { id }, data: { fromLocation, toLocation, priceUsd: price, vehicleType } });
     redirect("/admin/routes");
   }
 
@@ -65,108 +69,124 @@ export default async function AdminRoutesPage({
   }
 
   return (
-    <div className="p-8 max-w-5xl mx-auto">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Sabit Rota Yönetimi</h1>
-        <a href="/admin" className="text-sm font-bold text-gray-500 hover:text-gray-800 border border-gray-200 bg-white px-4 py-2 rounded-xl transition-colors">
-          ← Panele Dön
-        </a>
-      </div>
+    <AdminShell>
+      <div className="p-8 max-w-4xl">
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold text-slate-900">Sabit Rotalar</h1>
+          <p className="text-sm text-slate-500 mt-1">Popüler güzergahlar için sabit fiyat tanımlayın</p>
+        </div>
 
-      {/* ROTA EKLEME FORMU */}
-      <form action={addRoute} className="bg-white p-6 rounded-xl shadow-sm border mb-10 grid grid-cols-2 gap-4">
-        <h2 className="col-span-2 font-bold text-lg text-gray-700">Yeni Rota Ekle</h2>
-        <div className="flex flex-col gap-2">
-          <label htmlFor="new-from" className="text-sm font-semibold">Nereden (Başlangıç)</label>
-          <input id="new-from" name="fromLocation" placeholder="Örn: Istanbul Airport (IST)" title="Başlangıç noktası" className="border p-2 rounded" required />
+        {/* ADD FORM */}
+        <div className="bg-white rounded-2xl border border-slate-200 p-6 mb-8">
+          <h2 className="font-bold text-slate-900 mb-5">Yeni Rota Ekle</h2>
+          <form action={addRoute} className="grid grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="new-from" className={LABEL}>Nereden</label>
+              <input id="new-from" name="fromLocation" placeholder="İstanbul Havalimanı" className={INPUT} required />
+            </div>
+            <div>
+              <label htmlFor="new-to" className={LABEL}>Nereye</label>
+              <input id="new-to" name="toLocation" placeholder="Taksim" className={INPUT} required />
+            </div>
+            <div>
+              <label htmlFor="new-price" className={LABEL}>Sabit Ücret ($)</label>
+              <input id="new-price" name="price" type="number" step="0.1" min="0" placeholder="60" className={INPUT} required />
+            </div>
+            <div>
+              <label htmlFor="new-vehicle" className={LABEL}>Araç Tipi</label>
+              <select id="new-vehicle" name="vehicleType" className={INPUT} required>
+                {VEHICLE_OPTIONS.map(v => <option key={v} value={v}>{v}</option>)}
+              </select>
+            </div>
+            <button type="submit" className="col-span-2 bg-amber-500 hover:bg-amber-600 text-white font-bold py-2.5 rounded-xl text-sm transition-all">
+              Rotayı Kaydet
+            </button>
+          </form>
         </div>
-        <div className="flex flex-col gap-2">
-          <label htmlFor="new-to" className="text-sm font-semibold">Nereye (Varış)</label>
-          <input id="new-to" name="toLocation" placeholder="Örn: Sultanahmet" title="Varış noktası" className="border p-2 rounded" required />
-        </div>
-        <div className="flex flex-col gap-2">
-          <label htmlFor="new-price" className="text-sm font-semibold">Sabit Ücret ($)</label>
-          <input id="new-price" name="price" type="number" step="0.1" placeholder="60" title="Sabit ücret" className="border p-2 rounded" required />
-        </div>
-        <div className="flex flex-col gap-2">
-          <label htmlFor="new-vehicle" className="text-sm font-semibold">Araç Tipi</label>
-          <select id="new-vehicle" name="vehicleType" title="Araç Tipi" className="border p-2 rounded" required>
-            <option value="Mercedes Vito">Mercedes Vito</option>
-            <option value="Mercedes Sprinter">Mercedes Sprinter</option>
-          </select>
-        </div>
-        <button type="submit" className="col-span-2 bg-blue-600 text-white p-3 rounded-lg font-bold hover:bg-blue-700 transition">
-          Rotayı Sisteme Kaydet
-        </button>
-      </form>
 
-      {/* ROTA LİSTESİ */}
-      <div className="grid gap-4">
-        <h2 className="text-xl font-bold">Kayıtlı Sabit Rotalar</h2>
-        {routes.length === 0 ? (
-          <p className="text-gray-500">Henüz sabit rota eklenmemiş.</p>
-        ) : (
-          routes.map((r: FixedRoute) => (
-            <div key={r.id} className="bg-white rounded-xl border shadow-sm overflow-hidden">
-              {/* Rota bilgisi + butonlar */}
-              <div className="p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                <div>
-                  <p className="font-bold text-lg">{r.fromLocation} → {r.toLocation}</p>
-                  <p className="text-sm text-gray-500">Araç: {r.vehicleType}</p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <p className="font-bold text-blue-600 text-xl">${r.priceUsd}</p>
-                  <a
-                    href={`/admin/routes?edit=${r.id}`}
-                    className="text-xs font-bold px-3 py-1.5 rounded-lg bg-amber-100 text-amber-700 hover:bg-amber-200 transition-colors"
-                  >
-                    Düzenle
-                  </a>
-                  <form action={deleteRoute}>
-                    <input type="hidden" name="id" value={r.id} aria-hidden="true" />
-                    <DeleteButton message={`"${r.fromLocation} → ${r.toLocation}" silinsin mi?`} />
-                  </form>
-                </div>
+        {/* ROUTE LIST */}
+        <div>
+          <h2 className="font-bold text-slate-900 mb-4">Kayıtlı Rotalar <span className="text-slate-400 font-normal">({routes.length})</span></h2>
+
+          {routes.length === 0 ? (
+            <div className="bg-white rounded-2xl border border-slate-200 p-10 text-center text-slate-400 text-sm">
+              Henüz rota eklenmemiş
+            </div>
+          ) : (
+            <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+              {/* Table header */}
+              <div className="grid grid-cols-[1fr_auto_auto_auto] gap-4 px-5 py-3 bg-slate-50 border-b border-slate-100 text-xs font-bold text-slate-400 uppercase tracking-wider">
+                <span>Güzergah</span>
+                <span>Araç</span>
+                <span>Fiyat</span>
+                <span></span>
               </div>
 
-              {/* Düzenleme Formu */}
-              {editingRoute && editingRoute.id === r.id && (
-                <form action={updateRoute} className="border-t border-amber-100 bg-amber-50/50 p-4 grid grid-cols-2 gap-3">
-                  <h3 className="col-span-2 text-sm font-bold text-amber-700">Rotayı Düzenle</h3>
-                  <input type="hidden" name="id" value={r.id} aria-hidden="true" />
-                  <div className="flex flex-col gap-1">
-                    <label htmlFor={`edit-from-${r.id}`} className="text-xs font-semibold text-gray-600">Nereden</label>
-                    <input id={`edit-from-${r.id}`} name="fromLocation" defaultValue={r.fromLocation} title="Başlangıç noktası" className="border p-2 rounded text-sm" required />
+              <div className="divide-y divide-slate-50">
+                {routes.map((r: FixedRoute) => (
+                  <div key={r.id}>
+                    <div className="grid grid-cols-[1fr_auto_auto_auto] gap-4 px-5 py-4 items-center">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="font-semibold text-slate-900 text-sm truncate">{r.fromLocation}</span>
+                        <ArrowRight size={14} className="text-slate-400 shrink-0" />
+                        <span className="font-semibold text-slate-900 text-sm truncate">{r.toLocation}</span>
+                      </div>
+                      <span className="text-xs font-semibold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full whitespace-nowrap">{r.vehicleType}</span>
+                      <span className="font-bold text-slate-900 text-sm whitespace-nowrap">${r.priceUsd}</span>
+                      <div className="flex items-center gap-2">
+                        <a
+                          href={`/admin/routes?edit=${r.id}`}
+                          className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-amber-100 hover:text-amber-700 transition-colors"
+                        >
+                          Düzenle
+                        </a>
+                        <form action={deleteRoute}>
+                          <input type="hidden" name="id" value={r.id} aria-hidden="true" />
+                          <DeleteButton message={`"${r.fromLocation} → ${r.toLocation}" silinsin mi?`} />
+                        </form>
+                      </div>
+                    </div>
+
+                    {/* Edit form */}
+                    {editingRoute?.id === r.id && (
+                      <form action={updateRoute} className="border-t border-amber-100 bg-amber-50/40 px-5 py-4 grid grid-cols-2 gap-3">
+                        <p className="col-span-2 text-xs font-bold text-amber-700 mb-1">Rotayı Düzenle</p>
+                        <input type="hidden" name="id" value={r.id} aria-hidden="true" />
+                        <div>
+                          <label className={LABEL}>Nereden</label>
+                          <input name="fromLocation" defaultValue={r.fromLocation} title="Nereden" className={INPUT} required />
+                        </div>
+                        <div>
+                          <label className={LABEL}>Nereye</label>
+                          <input name="toLocation" defaultValue={r.toLocation} title="Nereye" className={INPUT} required />
+                        </div>
+                        <div>
+                          <label className={LABEL}>Sabit Ücret ($)</label>
+                          <input name="price" type="number" step="0.1" defaultValue={r.priceUsd} title="Sabit Ücret" className={INPUT} required />
+                        </div>
+                        <div>
+                          <label className={LABEL}>Araç Tipi</label>
+                          <select name="vehicleType" defaultValue={r.vehicleType} title="Araç Tipi" className={INPUT} required>
+                            {VEHICLE_OPTIONS.map(v => <option key={v} value={v}>{v}</option>)}
+                          </select>
+                        </div>
+                        <div className="col-span-2 flex gap-2">
+                          <button type="submit" className="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-bold py-2 rounded-lg text-sm transition-all">
+                            Kaydet
+                          </button>
+                          <a href="/admin/routes" className="flex-1 text-center bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 rounded-lg text-sm transition-all">
+                            İptal
+                          </a>
+                        </div>
+                      </form>
+                    )}
                   </div>
-                  <div className="flex flex-col gap-1">
-                    <label htmlFor={`edit-to-${r.id}`} className="text-xs font-semibold text-gray-600">Nereye</label>
-                    <input id={`edit-to-${r.id}`} name="toLocation" defaultValue={r.toLocation} title="Varış noktası" className="border p-2 rounded text-sm" required />
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <label htmlFor={`edit-price-${r.id}`} className="text-xs font-semibold text-gray-600">Sabit Ücret ($)</label>
-                    <input id={`edit-price-${r.id}`} name="price" type="number" step="0.1" defaultValue={r.priceUsd} title="Sabit ücret" className="border p-2 rounded text-sm" required />
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <label htmlFor={`edit-vtype-${r.id}`} className="text-xs font-semibold text-gray-600">Araç Tipi</label>
-                    <select id={`edit-vtype-${r.id}`} name="vehicleType" title="Araç Tipi" defaultValue={r.vehicleType} className="border p-2 rounded text-sm" required>
-                      <option value="Mercedes Vito">Mercedes Vito</option>
-                      <option value="Mercedes Sprinter">Mercedes Sprinter</option>
-                    </select>
-                  </div>
-                  <div className="col-span-2 flex gap-2">
-                    <button type="submit" className="flex-1 bg-amber-500 text-white p-2 rounded-lg font-bold hover:bg-amber-600 transition text-sm">
-                      Kaydet
-                    </button>
-                    <a href="/admin/routes" className="flex-1 text-center bg-gray-200 text-gray-700 p-2 rounded-lg font-bold hover:bg-gray-300 transition text-sm">
-                      İptal
-                    </a>
-                  </div>
-                </form>
-              )}
+                ))}
+              </div>
             </div>
-          ))
-        )}
+          )}
+        </div>
       </div>
-    </div>
+    </AdminShell>
   );
 }
