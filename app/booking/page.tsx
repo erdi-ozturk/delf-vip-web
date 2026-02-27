@@ -76,6 +76,7 @@ export default function BookingSelectionPage() {
 
   // Client-side mesafe hesabı (sunucu key'inde referrer kısıtlaması var)
   const [clientDistanceKm, setClientDistanceKm] = useState<number | null>(null);
+  const [isGoogleMapsReady, setIsGoogleMapsReady] = useState(false);
   const distanceMatrixServiceRef = useRef<any>(null);
 
   const isDataReady = !isEditing && isFromValid && isToValid && from && to && date !== null && (isRoundTrip ? returnDate !== null : true);
@@ -110,18 +111,19 @@ export default function BookingSelectionPage() {
         const div = document.createElement("div");
         placesServiceRef.current = new window.google.maps.places.PlacesService(div);
         distanceMatrixServiceRef.current = new window.google.maps.DistanceMatrixService();
+        setIsGoogleMapsReady(true);
       }
     }, 100);
     return () => clearInterval(waitForGoogle);
   }, []);
 
   // Adresler değişince mesafeyi tarayıcıdan hesapla (sunucu key'i referrer kısıtlı)
+  // isGoogleMapsReady da dependency'de: Maps geç yüklenirse sayfa URL param'larıyla açıldığında da tetiklenir
   useEffect(() => {
-    if (!fromFullAddress || !toFullAddress || !isFromValid || !isToValid) {
-      setClientDistanceKm(null);
+    if (!isGoogleMapsReady || !fromFullAddress || !toFullAddress || !isFromValid || !isToValid) {
+      if (isGoogleMapsReady && (!fromFullAddress || !toFullAddress)) setClientDistanceKm(null);
       return;
     }
-    if (!distanceMatrixServiceRef.current) return;
     distanceMatrixServiceRef.current.getDistanceMatrix(
       {
         origins: [fromFullAddress],
@@ -143,7 +145,7 @@ export default function BookingSelectionPage() {
         }
       }
     );
-  }, [fromFullAddress, toFullAddress, isFromValid, isToValid]);
+  }, [fromFullAddress, toFullAddress, isFromValid, isToValid, isGoogleMapsReady]);
 
   const getPredictions = (value: string, setSugs: (s: any[]) => void, setShow: (b: boolean) => void) => {
     if (!value || value.length < 2 || !autocompleteServiceRef.current) {
