@@ -143,7 +143,9 @@ export default function BookingSelectionPage() {
       { placeId: prediction.place_id, fields: ["formatted_address", "name"] },
       (place: any, status: string) => {
         if (status === "OK" && place) {
-          setFull(place.formatted_address || "");
+          const placeName = place.name || "";
+          const placeAddr = place.formatted_address || "";
+          setFull(placeName && placeAddr ? `${placeName} ${placeAddr}` : placeName || placeAddr);
           setValid(true);
         }
       }
@@ -494,8 +496,8 @@ export default function BookingSelectionPage() {
                         duration={duration}
                         onSelect={handleSelect}
                         isDataReady={Boolean(isDataReady)}
-                        pickup={fromFullAddress || from}
-                        dropoff={toFullAddress || to}
+                        pickup={[from, fromFullAddress].filter(Boolean).join(" ")}
+                        dropoff={[to, toFullAddress].filter(Boolean).join(" ")}
                         />
                     ))}
                 </div>

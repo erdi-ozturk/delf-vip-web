@@ -125,9 +125,14 @@ export default function Home() {
     if (inputRef.current) inputRef.current.value = name;
     clearErr();
     placesServiceRef.current?.getDetails(
-      { placeId: prediction.place_id, fields: ["formatted_address"] },
+      { placeId: prediction.place_id, fields: ["formatted_address", "name"] },
       (place: any, status: string) => {
-        if (status === "OK") setFull(place?.formatted_address || "");
+        if (status === "OK") {
+          // Zone matching için yer adını (ör. "Istanbul Airport (IST)") da ekle
+          const placeName = place?.name || "";
+          const placeAddr = place?.formatted_address || "";
+          setFull(placeName && placeAddr ? `${placeName} ${placeAddr}` : placeName || placeAddr);
+        }
       }
     );
   };

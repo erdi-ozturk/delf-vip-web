@@ -16,10 +16,12 @@ const ZONE_KEYWORDS: Record<string, string[]> = {
     "istanbul havaliman", "ist airport", "istanbul airport",
     "arnavutkoy havaliman", "yeni havaliman", "istanbul new airport",
     "havalimani", "istanbul intl",
+    "tayakadin", "terminal caddesi", // Google formatted_address'te geçen mahalle/cadde
   ],
   "Sabiha Gökçen": [
     "sabiha", "saw airport", "sabiha gokcen", "sabiha gökçen",
     "pendik havaliman", "kurtkoy", "kurtköy",
+    "sabiha gokcen havalimani", "saw havaliman", // ek eşleşmeler
   ],
   "Taksim": [
     "taksim", "besiktas", "beşiktaş", "beyoglu", "beyoğlu",
