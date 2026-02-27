@@ -110,6 +110,9 @@ export async function GET(request: NextRequest) {
   const duration    = searchParams.get("duration") || "4 Saat";
   const pickup      = searchParams.get("pickup") || "";
   const dropoff     = searchParams.get("dropoff") || "";
+  const providedDistanceKm = searchParams.get("distanceKm")
+    ? parseFloat(searchParams.get("distanceKm")!)
+    : null;
 
   if (!vehicleName) {
     return NextResponse.json({ error: "Araç belirtilmedi" }, { status: 400 });
@@ -179,7 +182,8 @@ export async function GET(request: NextRequest) {
 
     // ── 4. Transfer: mesafe bazlı fallback ──────────────────────────────────
     if (pickup && dropoff && vehicle.pricePerKm > 0) {
-      const distanceKm = await getDistanceKm(pickup, dropoff);
+      // Tarayıcıdan gelen mesafe varsa sunucu API çağrısını atla (referrer kısıtlaması bypass)
+      const distanceKm = providedDistanceKm ?? await getDistanceKm(pickup, dropoff);
       if (distanceKm !== null) {
         // İlk 40km taban fiyata dahil, sonrası km başına ücret
         const BASE_KM = 40;

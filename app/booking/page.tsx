@@ -74,6 +74,10 @@ export default function BookingSelectionPage() {
   const [showPickupSug, setShowPickupSug] = useState(false);
   const [showDropoffSug, setShowDropoffSug] = useState(false);
 
+  // Client-side mesafe hesabı (sunucu key'inde referrer kısıtlaması var)
+  const [clientDistanceKm, setClientDistanceKm] = useState<number | null>(null);
+  const distanceMatrixServiceRef = useRef<any>(null);
+
   const isDataReady = !isEditing && isFromValid && isToValid && from && to && date !== null && (isRoundTrip ? returnDate !== null : true);
 
   const pickupInputRef = useRef<HTMLInputElement>(null);
@@ -105,10 +109,41 @@ export default function BookingSelectionPage() {
         autocompleteServiceRef.current = new window.google.maps.places.AutocompleteService();
         const div = document.createElement("div");
         placesServiceRef.current = new window.google.maps.places.PlacesService(div);
+        distanceMatrixServiceRef.current = new window.google.maps.DistanceMatrixService();
       }
     }, 100);
     return () => clearInterval(waitForGoogle);
   }, []);
+
+  // Adresler değişince mesafeyi tarayıcıdan hesapla (sunucu key'i referrer kısıtlı)
+  useEffect(() => {
+    if (!fromFullAddress || !toFullAddress || !isFromValid || !isToValid) {
+      setClientDistanceKm(null);
+      return;
+    }
+    if (!distanceMatrixServiceRef.current) return;
+    distanceMatrixServiceRef.current.getDistanceMatrix(
+      {
+        origins: [fromFullAddress],
+        destinations: [toFullAddress],
+        travelMode: window.google.maps.TravelMode.DRIVING,
+      },
+      (response: any, status: string) => {
+        if (status === "OK") {
+          const meters = response?.rows?.[0]?.elements?.[0]?.distance?.value;
+          if (typeof meters === "number") {
+            console.log(`[DistanceMatrix] ${Math.round(meters / 1000)} km`);
+            setClientDistanceKm(Math.round(meters / 1000));
+          } else {
+            setClientDistanceKm(null);
+          }
+        } else {
+          console.warn(`[DistanceMatrix] status=${status}`);
+          setClientDistanceKm(null);
+        }
+      }
+    );
+  }, [fromFullAddress, toFullAddress, isFromValid, isToValid]);
 
   const getPredictions = (value: string, setSugs: (s: any[]) => void, setShow: (b: boolean) => void) => {
     if (!value || value.length < 2 || !autocompleteServiceRef.current) {
@@ -498,6 +533,7 @@ export default function BookingSelectionPage() {
                         isDataReady={Boolean(isDataReady)}
                         pickup={[from, fromFullAddress].filter(Boolean).join(" ")}
                         dropoff={[to, toFullAddress].filter(Boolean).join(" ")}
+                        clientDistanceKm={clientDistanceKm}
                         />
                     ))}
                 </div>
@@ -519,7 +555,8 @@ function VehicleCard({
   onSelect,
   isDataReady,
   pickup,
-  dropoff
+  dropoff,
+  clientDistanceKm,
 }: {
   vehicle: any,
   rates: any,
@@ -529,7 +566,8 @@ function VehicleCard({
   onSelect: any,
   isDataReady: boolean,
   pickup: string,
-  dropoff: string
+  dropoff: string,
+  clientDistanceKm: number | null,
 }) {
     const [currency, setCurrency] = useState<"TRY" | "USD" | "EUR" | "GBP">("TRY");
     const symbols = { TRY: "₺", USD: "$", EUR: "€", GBP: "£" };
@@ -551,6 +589,7 @@ function VehicleCard({
         dropoff,
         roundTrip: isRoundTrip ? "true" : "false",
         duration,
+        ...(clientDistanceKm !== null ? { distanceKm: String(clientDistanceKm) } : {}),
       });
       fetch(`/api/calculate-price?${params}`)
         .then(r => r.json())
@@ -567,7 +606,7 @@ function VehicleCard({
           }
         })
         .catch(() => setPriceStatus("unavailable"));
-    }, [vehicle.name, bookingType, pickup, dropoff, isRoundTrip, duration, isDataReady]);
+    }, [vehicle.name, bookingType, pickup, dropoff, isRoundTrip, duration, isDataReady, clientDistanceKm]);
 
     const finalUsdPrice = apiPriceUsd ?? 0;
     const prices = {
