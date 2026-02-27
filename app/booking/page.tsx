@@ -324,7 +324,7 @@ export default function BookingSelectionPage() {
                                 <input
                                   ref={pickupInputRef}
                                   type="text"
-                                  defaultValue={from}
+                                  value={from}
                                   onChange={(e) => {
                                     setFrom(e.target.value);
                                     setIsFromValid(false);
@@ -359,7 +359,7 @@ export default function BookingSelectionPage() {
                                 <input
                                   ref={dropoffInputRef}
                                   type="text"
-                                  defaultValue={to}
+                                  value={to}
                                   onChange={(e) => {
                                     setTo(e.target.value);
                                     setIsToValid(false);
