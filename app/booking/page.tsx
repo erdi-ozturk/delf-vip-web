@@ -3,10 +3,10 @@ import { sendGAEvent } from '@next/third-parties/google'
 import { useSearchParams, useRouter } from "next/navigation"
 import { useState, useEffect, useRef } from "react"
 import Image from "next/image"
-import { 
-  Users, Briefcase, ArrowRight, MapPin, Calendar, 
-  Lock, Plane, HandMetal, ThumbsUp, Star, Loader2, 
-  Edit2, ArrowRightLeft, X, Search, History, AlertCircle, Clock 
+import {
+  Users, Briefcase, ArrowRight, MapPin, Calendar,
+  Lock, Plane, HandMetal, ThumbsUp, Star, Loader2,
+  Edit2, ArrowRightLeft, X, Search, History, AlertCircle, Clock, PhoneCall
 } from "lucide-react"
 import DatePicker from "react-datepicker"; 
 import "react-datepicker/dist/react-datepicker.css";
@@ -534,9 +534,12 @@ function VehicleCard({
     const [currency, setCurrency] = useState<"TRY" | "USD" | "EUR" | "GBP">("TRY");
     const symbols = { TRY: "₺", USD: "$", EUR: "€", GBP: "£" };
     const [apiPriceUsd, setApiPriceUsd] = useState<number | null>(null);
+    const [priceStatus, setPriceStatus] = useState<"loading" | "found" | "unavailable">("loading");
 
     useEffect(() => {
       if (!isDataReady || !pickup || !dropoff || pickup === "Konum Belirtilmedi" || dropoff === "Konum Belirtilmedi") return;
+      setPriceStatus("loading");
+      setApiPriceUsd(null);
       const params = new URLSearchParams({
         vehicle: vehicle.name,
         type: bookingType,
@@ -549,18 +552,18 @@ function VehicleCard({
         .then(r => r.json())
         .then(data => {
           console.log(`[VehicleCard] ${vehicle.name} | source=${data.source} | route=${data.route ?? '-'} | priceUsd=${data.priceUsd}`);
-          if (data.priceUsd) setApiPriceUsd(data.priceUsd);
+          // source=base → hesaplanamadı (taban fiyat fallback), gerçek fiyat değil
+          if (data.priceUsd && data.source !== "base") {
+            setApiPriceUsd(data.priceUsd);
+            setPriceStatus("found");
+          } else {
+            setPriceStatus("unavailable");
+          }
         })
-        .catch(() => {});
+        .catch(() => setPriceStatus("unavailable"));
     }, [vehicle.name, bookingType, pickup, dropoff, isRoundTrip, duration, isDataReady]);
 
-    // API fiyatı varsa onu kullan, yoksa basePriceUsd ile fallback
-    const multipliers: Record<string, number> = { "4 Saat": 1, "8 Saat": 1.8, "10 Saat": 2.2, "12 Saat": 2.5 };
-    const fallbackPrice = bookingType === 'hourly'
-      ? vehicle.basePriceUsd * (multipliers[duration] || 1)
-      : isRoundTrip ? vehicle.basePriceUsd * 2 : vehicle.basePriceUsd;
-    const finalUsdPrice = apiPriceUsd ?? fallbackPrice;
-
+    const finalUsdPrice = apiPriceUsd ?? 0;
     const prices = {
       TRY: Math.round(finalUsdPrice * rates.TRY),
       EUR: Math.round(finalUsdPrice * rates.EUR),
@@ -582,7 +585,22 @@ function VehicleCard({
                     <div className="grid grid-cols-2 gap-y-2 text-xs text-gray-500 mb-4"><div className="flex items-center gap-1.5"><Lock size={12} className="text-green-500"/> Sabit Fiyat</div><div className="flex items-center gap-1.5"><Plane size={12} className="text-blue-500"/> Uçuş Takibi</div><div className="flex items-center gap-1.5"><HandMetal size={12} className="text-amber-500"/> VIP Karşılama</div><div className="flex items-center gap-1.5"><ThumbsUp size={12} className="text-purple-500"/> Ücretsiz İptal</div></div>
                 </div>
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-gray-100 pt-4">
-                    {isDataReady ? (
+                    {!isDataReady ? (
+                        /* Form doldurulmadı */
+                        <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-4"><div className="flex items-center gap-2 text-amber-600 bg-amber-50 px-4 py-2 rounded-lg border border-amber-100 w-full flex-1 text-xs font-bold"><AlertCircle size={18} /> Fiyat görmek için lütfen tüm alanları seçiniz.</div><button onClick={() => onSelect(vehicle.name, "0 TL")} className="bg-gray-200 text-gray-600 font-bold py-3 px-6 rounded-xl text-sm whitespace-nowrap">Seç <ArrowRight size={16} className="inline ml-1"/></button></div>
+                    ) : priceStatus === "loading" ? (
+                        /* Fiyat hesaplanıyor — skeleton */
+                        <div className="w-full flex items-center justify-between gap-4 animate-pulse">
+                            <div className="flex gap-2">
+                                {[1,2,3,4].map(i => <div key={i} className="h-10 w-16 bg-gray-100 rounded-lg" />)}
+                            </div>
+                            <div className="flex items-center gap-4">
+                                <div className="h-8 w-24 bg-gray-100 rounded-lg hidden md:block" />
+                                <div className="h-10 w-24 bg-amber-100 rounded-xl" />
+                            </div>
+                        </div>
+                    ) : priceStatus === "found" ? (
+                        /* Fiyat bulundu */
                         <>
                             <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-2 w-full sm:w-auto">
                                 {(['TRY', 'USD', 'EUR', 'GBP'] as const).map((cur) => (
@@ -597,7 +615,14 @@ function VehicleCard({
                             </div>
                         </>
                     ) : (
-                        <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-4"><div className="flex items-center gap-2 text-amber-600 bg-amber-50 px-4 py-2 rounded-lg border border-amber-100 w-full flex-1 text-xs font-bold"><AlertCircle size={18} /> Fiyat görmek için lütfen tüm alanları seçiniz.</div><button onClick={() => onSelect(vehicle.name, "0 TL")} className="bg-gray-200 text-gray-600 font-bold py-3 px-6 rounded-xl text-sm whitespace-nowrap">Seç <ArrowRight size={16} className="inline ml-1"/></button></div>
+                        /* Özel güzergah — fiyat hesaplanamadı */
+                        <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-4">
+                            <div className="flex items-center gap-2 text-blue-700 bg-blue-50 px-4 py-2 rounded-lg border border-blue-100 w-full flex-1 text-xs font-bold">
+                                <PhoneCall size={16} className="shrink-0" />
+                                <span>Özel güzergah — Fiyat için: <a href="tel:+905441459199" className="underline">+90 544 145 91 99</a></span>
+                            </div>
+                            <button onClick={() => onSelect(vehicle.name, "Teklif")} className="bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 px-6 rounded-xl shadow-md transition-all text-sm whitespace-nowrap">Seç <ArrowRight size={16} className="inline ml-1"/></button>
+                        </div>
                     )}
                 </div>
             </div>
