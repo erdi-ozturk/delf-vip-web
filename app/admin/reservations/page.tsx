@@ -60,6 +60,7 @@ export default async function AdminReservationsPage({
     if (!id || !["new", "confirmed", "cancelled"].includes(newStatus)) return;
     await db.reservation.update({ where: { id }, data: { status: newStatus } });
     revalidatePath("/admin/reservations");
+    revalidatePath("/admin");
   }
 
   async function deleteReservation(formData: FormData) {
@@ -68,6 +69,7 @@ export default async function AdminReservationsPage({
     if (!id) return;
     await db.reservation.delete({ where: { id } });
     revalidatePath("/admin/reservations");
+    revalidatePath("/admin");
   }
 
   function buildUrl(params: { status?: string; search?: string; page?: string }) {
