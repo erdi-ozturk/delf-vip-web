@@ -195,14 +195,24 @@ export default async function AdminReservationsPage({
                         {/* Rota */}
                         <div className="space-y-2">
                           <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Rota</p>
-                          <p className="text-sm font-bold text-slate-900 flex items-start gap-2">
+                          <div className="flex items-start gap-2">
                             <MapPin size={14} className="text-green-500 mt-0.5 shrink-0" />
-                            <span className="line-clamp-2">{r.pickupName || r.pickupAddr}</span>
-                          </p>
-                          <p className="text-sm font-bold text-slate-900 flex items-start gap-2">
+                            <div>
+                              <p className="text-sm font-bold text-slate-900 leading-snug">{r.pickupName || r.pickupAddr}</p>
+                              {r.pickupName && r.pickupName !== r.pickupAddr && (
+                                <p className="text-xs text-slate-400 mt-0.5 line-clamp-1">{r.pickupAddr}</p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-start gap-2">
                             <MapPin size={14} className="text-red-500 mt-0.5 shrink-0" />
-                            <span className="line-clamp-2">{r.dropoffName || r.dropoffAddr}</span>
-                          </p>
+                            <div>
+                              <p className="text-sm font-bold text-slate-900 leading-snug">{r.dropoffName || r.dropoffAddr}</p>
+                              {r.dropoffName && r.dropoffName !== r.dropoffAddr && (
+                                <p className="text-xs text-slate-400 mt-0.5 line-clamp-1">{r.dropoffAddr}</p>
+                              )}
+                            </div>
+                          </div>
                         </div>
 
                         {/* Detaylar */}
