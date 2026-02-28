@@ -279,8 +279,8 @@ export default function Home() {
 
         <div className="relative z-10 w-full px-4 flex flex-col items-center">
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-white text-center mb-6 leading-tight drop-shadow-lg">
-            Ayrıcalıklı Yolculuk <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-yellow-200">Tek Bir Dokunuşla.</span>
+            İstanbul VIP Transfer & <br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-yellow-200">Şoförlü Araç Kiralama</span>
           </h1>
 
           <div className="w-full max-w-[1350px] bg-white rounded-3xl shadow-2xl relative animate-in fade-in slide-in-from-bottom-10 duration-700 overflow-visible">
