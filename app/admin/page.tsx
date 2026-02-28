@@ -19,7 +19,9 @@ function detectCurrency(prices: string[]): string {
 }
 
 export default async function AdminDashboard() {
-  const nowISO = new Date().toISOString();
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  const sevenDaysAgoISO = sevenDaysAgo.toISOString();
 
   const [totalRes, newRes, confirmedRes, routeCount, vehicleCount, confirmedPrices, recentReservations, upcomingTransfers] = await Promise.all([
     db.reservation.count(),
@@ -32,7 +34,7 @@ export default async function AdminDashboard() {
     db.reservation.findMany({
       where: {
         status: { not: "cancelled" },
-        date: { gte: nowISO },
+        date: { gte: sevenDaysAgoISO },
       },
       orderBy: { date: "asc" },
       take: 8,
@@ -91,7 +93,7 @@ export default async function AdminDashboard() {
             <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
               <div className="flex items-center gap-2">
                 <CalendarCheck size={16} className="text-amber-500" />
-                <h2 className="font-bold text-slate-900">Yaklaşan Transferler</h2>
+                <h2 className="font-bold text-slate-900">Son & Yaklaşan Transferler</h2>
               </div>
               <Link href="/admin/reservations" className="text-xs font-semibold text-amber-600 hover:text-amber-700">
                 Tümünü gör →
@@ -99,7 +101,7 @@ export default async function AdminDashboard() {
             </div>
             {upcomingTransfers.length === 0 ? (
               <div className="px-6 py-10 text-center text-slate-400 text-sm">
-                Yaklaşan transfer yok
+                Son 7 günde transfer yok
               </div>
             ) : (
               <div className="divide-y divide-slate-50">
