@@ -5,6 +5,7 @@ import Navbar from "@/components/Navbar";
 import Image from "next/image";
 import Link from "next/link";
 import { Facebook, Instagram, MapPin, Phone } from "lucide-react";
+import { Analytics } from "@vercel/analytics/next"
 
 import WeglotScript from "@/components/WeglotScript";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
@@ -229,6 +230,9 @@ export default function RootLayout({
         {/* 🔥 GOOGLE ANALYTICS BURAYA EKLENDİ */}
         {/* 'G-XXXXXXXXXX' kısmını kendi numaranla değiştirmeyi unutma! */}
         <GoogleAnalytics gaId="G-Z72VL1M3MX" />
+
+        {/* Vercel Analytics */}
+        <Analytics />
 
       </body>
     </html>
