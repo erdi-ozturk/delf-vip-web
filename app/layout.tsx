@@ -13,7 +13,8 @@ import Script from 'next/script';
 
 // 🔥 Google Analytics bileşenini import ettik
 import { GoogleAnalytics } from '@next/third-parties/google' 
-import { LanguageProvider } from "@/components/LanguageContext"; 
+import { LanguageProvider } from "@/components/LanguageContext";
+import { Analytics } from '@vercel/analytics/next'; 
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -229,6 +230,9 @@ export default function RootLayout({
         {/* 🔥 GOOGLE ANALYTICS BURAYA EKLENDİ */}
         {/* 'G-XXXXXXXXXX' kısmını kendi numaranla değiştirmeyi unutma! */}
         <GoogleAnalytics gaId="G-Z72VL1M3MX" />
+        
+        {/* Vercel Web Analytics */}
+        <Analytics />
 
       </body>
     </html>
