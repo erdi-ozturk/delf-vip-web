@@ -88,6 +88,17 @@ export default function BookingSelectionPage() {
   const autocompleteServiceRef = useRef<any>(null);
   const placesServiceRef = useRef<any>(null);
 
+  // GA4: Booking sayfası görüntülendi (araç seçim adımı)
+  useEffect(() => {
+    sendGAEvent({
+      event: 'booking_page_viewed',
+      pickup: pickupName,
+      dropoff: dropoffName,
+      booking_type: bookingType,
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     async function fetchRates() {
       try {

@@ -1,13 +1,14 @@
 "use client"
 
 import { useSearchParams, useRouter } from "next/navigation"
-import { useState, useEffect, useTransition } from "react"
+import { useState, useEffect, useTransition, useRef } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { 
-  MapPin, Calendar, Clock, User, Mail, Phone, 
-  MessageSquare, CheckCircle2, AlertCircle, ArrowRight, Plane, History 
+import {
+  MapPin, Calendar, Clock, User, Mail, Phone,
+  MessageSquare, CheckCircle2, AlertCircle, ArrowRight, Plane, History
 } from "lucide-react"
+import { sendGAEvent } from '@next/third-parties/google'
 
 export default function CheckoutPage() {
   const searchParams = useSearchParams()
@@ -33,6 +34,21 @@ export default function CheckoutPage() {
   const price = searchParams.get("price") || "0 ₺";
   const roundTrip = searchParams.get("roundTrip") || "false";
   const passengers = searchParams.get("passengers") || "1";
+
+  // GA4 form tracking
+  const formStartedRef = useRef(false);
+  const handleFormFocus = () => {
+    if (!formStartedRef.current) {
+      formStartedRef.current = true;
+      sendGAEvent({ event: 'booking_form_started', vehicle, pickup: pickupName, dropoff: dropoffName });
+    }
+  };
+
+  // GA4: Checkout sayfası görüntülendi
+  useEffect(() => {
+    sendGAEvent({ event: 'checkout_page_viewed', vehicle, price, pickup: pickupName, dropoff: dropoffName });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // --- SUNUCU TARAFLI FİYAT DOĞRULAMA ---
   const [serverPriceUsd, setServerPriceUsd] = useState<number | null>(null);
@@ -167,6 +183,8 @@ export default function CheckoutPage() {
       const message = lines;
 
       const encodedMessage = encodeURIComponent(message);
+      // GA4: Rezervasyon tamamlandı
+      sendGAEvent({ event: 'booking_completed', vehicle, price: displayPrice, pickup: pickupName, dropoff: dropoffName });
       window.open(`https://wa.me/905441459199?text=${encodedMessage}`, '_blank');
       router.push("/tesekkurler");
     });
@@ -286,6 +304,7 @@ export default function CheckoutPage() {
                                 placeholder="Örn: Ahmet Yılmaz"
                                 className={`w-full pl-10 pr-4 py-3 rounded-xl border focus:ring-2 outline-none transition-all text-sm font-bold text-slate-900 ${fieldErrors.name ? "border-red-400 focus:border-red-400 focus:ring-red-100 bg-red-50" : "border-gray-200 focus:border-amber-500 focus:ring-amber-200"}`}
                                 value={formData.name}
+                                onFocus={handleFormFocus}
                                 onChange={(e) => { setFormData({...formData, name: e.target.value}); setFieldErrors(p => ({...p, name: ""})); }}
                             />
                             <User className={`absolute left-3 top-3 ${fieldErrors.name ? "text-red-400" : "text-gray-400"}`} size={18} />
