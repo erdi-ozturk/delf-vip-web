@@ -9,6 +9,9 @@ import {
   MessageSquare, CheckCircle2, AlertCircle, ArrowRight, Plane, History
 } from "lucide-react"
 import { sendGAEvent } from '@next/third-parties/google'
+import DatePicker from "react-datepicker"
+import "react-datepicker/dist/react-datepicker.css"
+import { tr } from "date-fns/locale"
 
 export default function CheckoutPage() {
   const searchParams = useSearchParams()
@@ -78,6 +81,13 @@ export default function CheckoutPage() {
   // Güvenli fiyat: sunucudan gelen USD fiyatı, yoksa URL parametresine dön
   const displayPrice = serverPriceUsd ? `$${serverPriceUsd}` : price;
 
+  // --- TARİH SEÇİMİ (URL'de tarih yoksa formda göster) ---
+  const [selectedDate, setSelectedDate] = useState<Date | null>(
+    dateStr ? new Date(dateStr) : null
+  );
+  // Etkin tarih: URL'den gelen veya formda seçilen
+  const effectiveDateStr = selectedDate ? selectedDate.toISOString() : dateStr;
+
   // --- FORM STATE ---
   const [formData, setFormData] = useState({
     name: "",
@@ -87,7 +97,7 @@ export default function CheckoutPage() {
     note: ""
   });
   const [formError, setFormError] = useState("");
-  const [fieldErrors, setFieldErrors] = useState({ name: "", phone: "", email: "" });
+  const [fieldErrors, setFieldErrors] = useState({ name: "", phone: "", email: "", date: "" });
   const [isPending, startTransition] = useTransition();
 
   // --- TARİH FORMATLAMA ---
@@ -111,7 +121,7 @@ export default function CheckoutPage() {
   // --- WHATSAPP MESAJI ---
   const handleWhatsAppClick = () => {
     setFormError("");
-    const errors = { name: "", phone: "", email: "" };
+    const errors = { name: "", phone: "", email: "", date: "" };
     let hasError = false;
 
     if (!formData.name.trim() || formData.name.trim().length < 2) {
@@ -127,6 +137,11 @@ export default function CheckoutPage() {
 
     if (formData.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
       errors.email = "Geçerli bir e-posta adresi giriniz.";
+      hasError = true;
+    }
+
+    if (!effectiveDateStr) {
+      errors.date = "Lütfen tarih ve saat seçiniz.";
       hasError = true;
     }
 
@@ -149,7 +164,7 @@ export default function CheckoutPage() {
             pickupAddr,
             dropoffName,
             dropoffAddr,
-            date: dateStr,
+            date: effectiveDateStr,
             returnDate: returnDateStr,
             duration,
             passengers,
@@ -175,7 +190,7 @@ export default function CheckoutPage() {
         `Nereden: ${pickupName}`,
         `Nereye: ${dropoffName}`,
         bookingType === 'hourly' ? `Süre: ${duration}` : null,
-        `Tarih: ${formatDate(dateStr)}`,
+        `Tarih: ${formatDate(effectiveDateStr)}`,
         returnDateStr ? `Dönüş Tarihi: ${formatDate(returnDateStr)}` : null,
         `Yolcu: ${passengers} kişi`,
         ``,
@@ -246,7 +261,7 @@ export default function CheckoutPage() {
                         <Calendar className="text-amber-500 mt-0.5 shrink-0" size={18} />
                         <div>
                             <span className="text-xs font-bold text-gray-400 block uppercase">Başlangıç Tarihi</span>
-                            <span className="text-sm font-bold text-slate-900">{formatDate(dateStr)}</span>
+                            <span className="text-sm font-bold text-slate-900">{formatDate(effectiveDateStr)}</span>
                         </div>
                     </div>
 
@@ -295,6 +310,37 @@ export default function CheckoutPage() {
           <div className="lg:col-span-2">
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 md:p-8">
                 
+                {/* Tarih seçici — URL'de tarih yoksa göster (tur rezervasyonları) */}
+                {!dateStr && (
+                  <div className="mb-8 pb-8 border-b border-gray-100">
+                    <h2 className="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+                      <Calendar className="text-amber-500" /> Tarih ve Saat Seçin
+                    </h2>
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-gray-500 uppercase">
+                        Alınış Tarihi ve Saati <span className="text-red-400">*</span>
+                      </label>
+                      <div className="relative">
+                        <DatePicker
+                          selected={selectedDate}
+                          onChange={(date: Date | null) => { setSelectedDate(date); setFieldErrors(p => ({ ...p, date: "" })); }}
+                          showTimeSelect
+                          timeIntervals={15}
+                          timeCaption="Saat"
+                          dateFormat="d MMMM yyyy, HH:mm"
+                          locale={tr}
+                          minDate={new Date()}
+                          placeholderText="Gün ve saat seçin..."
+                          className={`w-full pl-10 pr-4 py-3 rounded-xl border focus:ring-2 outline-none transition-all text-sm font-bold text-slate-900 cursor-pointer ${fieldErrors.date ? "border-red-400 focus:ring-red-100 bg-red-50" : "border-gray-200 focus:border-amber-500 focus:ring-amber-200"}`}
+                          wrapperClassName="w-full"
+                        />
+                        <Calendar className={`absolute left-3 top-3 pointer-events-none ${fieldErrors.date ? "text-red-400" : "text-gray-400"}`} size={18} />
+                      </div>
+                      {fieldErrors.date && <p className="text-xs text-red-500 font-semibold">{fieldErrors.date}</p>}
+                    </div>
+                  </div>
+                )}
+
                 <h2 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
                     <User className="text-amber-500" /> İletişim Bilgileri
                 </h2>
