@@ -392,38 +392,40 @@ export default function BookingSelectionPage() {
                                 <div className="flex-1 relative">
                                     <div className={`absolute left-3 top-3 z-10 ${errors.date ? 'text-red-500' : 'text-slate-900'}`}><Calendar size={16}/></div>
                                     <div className={`absolute left-9 top-1.5 text-[8px] font-bold uppercase z-10 ${errors.date ? 'text-red-400' : 'text-gray-400'}`}>TARİH</div>
-                                    <DatePicker 
-                                        ref={startDatePickerRef} 
-                                        selected={date} 
-                                        onChange={handleStartSelect} 
+                                    <DatePicker
+                                        ref={startDatePickerRef}
+                                        selected={date}
+                                        onChange={handleStartSelect}
                                         showTimeSelect={isStartTimeMode}
                                         showTimeSelectOnly={isStartTimeMode}
-                                        timeIntervals={30} 
-                                        timeCaption="SAAT" 
+                                        timeIntervals={30}
+                                        timeCaption="SAAT"
                                         dateFormat={isStartTimeMode ? "HH:mm" : "d MMM yyyy HH:mm"}
-                                        locale={tr} 
+                                        locale={tr}
+                                        minDate={new Date()}
                                         portalId="root-portal"
                                         shouldCloseOnSelect={false}
-                                        className={`w-full pl-9 pt-4 pb-2 text-xs font-bold text-slate-900 border rounded-xl outline-none ${errors.date ? 'border-red-500 bg-red-50' : 'border-gray-200'}`} 
-                                        placeholderText="Seç" 
-                                        popperPlacement="bottom-start" 
+                                        className={`w-full pl-9 pt-4 pb-2 text-xs font-bold text-slate-900 border rounded-xl outline-none ${errors.date ? 'border-red-500 bg-red-50' : 'border-gray-200'}`}
+                                        placeholderText="Seç"
+                                        popperPlacement="bottom-start"
                                     />
                                 </div>
                                 {bookingType === 'transfer' && (
                                     <div className={`flex-1 relative transition-all duration-300 ${!isRoundTrip ? 'opacity-40 cursor-not-allowed' : 'opacity-100'}`}>
                                         <div className={`absolute left-3 top-3 z-10 ${errors.returnDate ? 'text-red-500' : 'text-slate-900'}`}><History size={16}/></div>
                                         <div className={`absolute left-9 top-1.5 text-[8px] font-bold uppercase z-10 ${errors.returnDate ? 'text-red-400' : 'text-gray-400'}`}>DÖNÜŞ</div>
-                                        <DatePicker 
-                                            ref={returnDatePickerRef} 
-                                            selected={returnDate} 
-                                            onChange={handleReturnSelect} 
+                                        <DatePicker
+                                            ref={returnDatePickerRef}
+                                            selected={returnDate}
+                                            onChange={handleReturnSelect}
                                             showTimeSelect={isReturnTimeMode}
                                             showTimeSelectOnly={isReturnTimeMode}
-                                            timeIntervals={30} 
-                                            timeCaption="SAAT" 
+                                            timeIntervals={30}
+                                            timeCaption="SAAT"
                                             dateFormat={isReturnTimeMode ? "HH:mm" : "d MMM yyyy HH:mm"}
-                                            locale={tr} 
-                                            disabled={!isRoundTrip} 
+                                            locale={tr}
+                                            minDate={date || new Date()}
+                                            disabled={!isRoundTrip}
                                             portalId="root-portal"
                                             shouldCloseOnSelect={false}
                                             className={`w-full pl-9 pt-4 pb-2 text-xs font-bold border rounded-xl outline-none transition-colors 
