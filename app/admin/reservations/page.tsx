@@ -220,6 +220,14 @@ export default async function AdminReservationsPage({
                         {/* Detaylar */}
                         <div className="space-y-2">
                           <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Detaylar</p>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${r.bookingType === "hourly" ? "bg-purple-100 text-purple-700" : "bg-sky-100 text-sky-700"}`}>
+                              {r.bookingType === "hourly" ? "⏱ Saatlik Tahsis" : "🚗 Transfer"}
+                            </span>
+                            {r.duration && r.bookingType === "hourly" && (
+                              <span className="text-[10px] font-semibold text-gray-500">{r.duration}</span>
+                            )}
+                          </div>
                           <p className="text-sm font-bold text-slate-900 flex items-center gap-2">
                             <Car size={14} className="text-amber-500" /> {r.vehicle}
                           </p>
