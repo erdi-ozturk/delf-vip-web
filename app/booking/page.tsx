@@ -186,7 +186,7 @@ export default function BookingSelectionPage() {
         if (status === "OK" && place) {
           const placeName = place.name || "";
           const placeAddr = place.formatted_address || "";
-          setFull(placeName && placeAddr ? `${placeName} ${placeAddr}` : placeName || placeAddr);
+          setFull(placeAddr || placeName);
           setValid(true);
         }
       }
