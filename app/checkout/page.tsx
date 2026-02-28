@@ -50,11 +50,15 @@ export default function CheckoutPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Tur sayfasından gelen sabit fiyatlı rezervasyonlarda server hesabı atla
+  const tourFixed = searchParams.get("tourFixed") === "true";
+
   // --- SUNUCU TARAFLI FİYAT DOĞRULAMA ---
   const [serverPriceUsd, setServerPriceUsd] = useState<number | null>(null);
-  const [priceLoading, setPriceLoading] = useState(true);
+  const [priceLoading, setPriceLoading] = useState(!tourFixed);
 
   useEffect(() => {
+    if (tourFixed) return;
     const params = new URLSearchParams({
       vehicle,
       type: bookingType,
@@ -359,9 +363,15 @@ export default function CheckoutPage() {
 
                 <div className="space-y-2 mb-8">
                     <label className="text-xs font-bold text-gray-500 uppercase">Şoföre Notunuz (Opsiyonel)</label>
-                    <textarea 
+                    {tourFixed && (
+                      <div className="flex items-start gap-2 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 text-sm text-blue-700">
+                        <MapPin size={16} className="shrink-0 mt-0.5 text-blue-500" />
+                        <span><strong>Lütfen tam alınış adresinizi buraya yazın.</strong> (Örn: Hilton İstanbul, oda 305)</span>
+                      </div>
+                    )}
+                    <textarea
                         rows={3}
-                        placeholder="Çocuk koltuğu istiyorum, vb..." 
+                        placeholder={tourFixed ? "Alınış adresiniz: otel adı, oda no, vb..." : "Çocuk koltuğu istiyorum, vb..."}
                         className="w-full p-4 rounded-xl border border-gray-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 outline-none transition-all text-sm font-bold text-slate-900 resize-none"
                         value={formData.note}
                         onChange={(e) => setFormData({...formData, note: e.target.value})}

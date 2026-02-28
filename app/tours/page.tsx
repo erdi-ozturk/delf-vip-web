@@ -44,8 +44,20 @@ export default function ToursPage() {
       image: "/images/tours/istanbul-vip-transfer-tour.jpg",
       duration: "10 Saat (Araç Tahsis)",
       rating: "4.9",
-      priceUsd: 150, 
-      tags: ["Şoförlü Araç", "Günlük", "Transfer"]
+      priceUsd: 150,
+      tags: ["Şoförlü Araç", "Günlük", "Transfer"],
+      checkoutParams: new URLSearchParams({
+        tourFixed: "true",
+        type: "hourly",
+        duration: "10 Saat",
+        pickup: "İstanbul, Türkiye",
+        pickupName: "İstanbul",
+        dropoff: "İstanbul, Türkiye",
+        dropoffName: "İstanbul",
+        vehicle: "Mercedes-Benz Vito VIP",
+        price: "$150",
+        passengers: "1",
+      }).toString(),
     },
     {
       id: 2,
@@ -54,8 +66,20 @@ export default function ToursPage() {
       image: "/images/tours/sapanca-masukiye-vip-transfer-tour.jpg",
       duration: "Tam Gün (Gidiş-Dönüş)",
       rating: "5.0",
-      priceUsd: 225, 
-      tags: ["Doğa", "Beklemeli", "VIP"]
+      priceUsd: 225,
+      tags: ["Doğa", "Beklemeli", "VIP"],
+      checkoutParams: new URLSearchParams({
+        tourFixed: "true",
+        type: "transfer",
+        roundTrip: "true",
+        pickup: "İstanbul, Türkiye",
+        pickupName: "İstanbul",
+        dropoff: "Sapanca, Sakarya, Türkiye",
+        dropoffName: "Sapanca & Maşukiye",
+        vehicle: "Mercedes-Benz Vito VIP",
+        price: "$225",
+        passengers: "1",
+      }).toString(),
     },
     {
       id: 3,
@@ -64,8 +88,20 @@ export default function ToursPage() {
       image: "/images/tours/Bursa-Uludag-vip-tour-transfer.jpg",
       duration: "Tam Gün (Gidiş-Dönüş)",
       rating: "4.8",
-      priceUsd: 280, 
-      tags: ["Kayak", "Teleferik", "Ulaşım"]
+      priceUsd: 280,
+      tags: ["Kayak", "Teleferik", "Ulaşım"],
+      checkoutParams: new URLSearchParams({
+        tourFixed: "true",
+        type: "transfer",
+        roundTrip: "true",
+        pickup: "İstanbul, Türkiye",
+        pickupName: "İstanbul",
+        dropoff: "Bursa, Türkiye",
+        dropoffName: "Bursa & Uludağ",
+        vehicle: "Mercedes-Benz Vito VIP",
+        price: "$280",
+        passengers: "1",
+      }).toString(),
     },
     {
       id: 6,
@@ -74,9 +110,21 @@ export default function ToursPage() {
       image: "/images/tours/istanbul-transfer-tour.jpeg",
       duration: "8 Saat Tahsis",
       rating: "4.7",
-      priceUsd: 120, 
-      tags: ["Alışveriş", "Beklemeli", "VIP"]
-    }
+      priceUsd: 120,
+      tags: ["Alışveriş", "Beklemeli", "VIP"],
+      checkoutParams: new URLSearchParams({
+        tourFixed: "true",
+        type: "hourly",
+        duration: "8 Saat",
+        pickup: "İstanbul, Türkiye",
+        pickupName: "İstanbul",
+        dropoff: "İstanbul, Türkiye",
+        dropoffName: "İstanbul",
+        vehicle: "Mercedes-Benz Vito VIP",
+        price: "$120",
+        passengers: "1",
+      }).toString(),
+    },
   ]
 
   return (
@@ -186,9 +234,8 @@ export default function ToursPage() {
 
                                     </div>
                                     
-                                    {/* 🔥 DÜZELTME: href="/contact" yerine href="/booking" yapıldı */}
-                                    <Link 
-                                        href="/booking" 
+                                    <Link
+                                        href={`/checkout?${tour.checkoutParams}`}
                                         className="bg-slate-900 hover:bg-slate-800 text-white px-5 py-3 rounded-xl font-bold text-sm transition-all flex items-center gap-2 group-hover:bg-amber-600"
                                     >
                                         Rezervasyon Yap <ArrowRight size={16} />
