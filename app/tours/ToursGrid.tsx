@@ -84,7 +84,6 @@ export default function ToursGrid({ tours }: ToursGridProps) {
                 alt={tour.title}
                 fill
                 className="object-cover group-hover:scale-110 transition-transform duration-700"
-                unoptimized={true}
               />
               <div className="absolute top-4 left-4 z-20 bg-white/10 backdrop-blur-md border border-white/20 text-white text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1">
                 <MapPin size={12} className="text-amber-400" /> {tour.location}

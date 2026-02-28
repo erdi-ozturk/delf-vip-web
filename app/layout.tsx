@@ -20,7 +20,7 @@ const inter = Inter({ subsets: ["latin"] });
 
 const siteUrl = "https://www.delfvip.com";
 const defaultTitle = "DELF VIP | İstanbul VIP Transfer & Şoförlü Araç Kiralama";
-const defaultDescription = "İstanbul Havalimanı (IST) ve Sabiha Gökçen (SAW) için 7/24 lüks VIP transfer hizmeti. Mercedes Vito araçlarla konforlu, güvenli ve sabit fiyatlı yolculuk.";
+const defaultDescription = "İstanbul Havalimanı (IST) ve Sabiha Gökçen (SAW) için 7/24 lüks VIP transfer hizmeti. Mercedes Vito araçlarla konforlu, güvenli ve sabit fiyatlı yolculuk. Hemen rezervasyon yapın!";
 
 export const metadata: Metadata = {
   title: {

@@ -274,7 +274,7 @@ export default function Home() {
 
       <section className="relative min-h-[850px] lg:h-[950px] flex flex-col items-center justify-center pt-24 pb-12 overflow-hidden">
         <div className="absolute inset-0 z-0">
-          <Image src="/images/cars/istanbul-chauffer-vip.avif" alt="VIP Transfer" fill className="object-cover brightness-[0.4]" priority />
+          <Image src="/images/cars/istanbul-chauffer-vip.avif" alt="İstanbul VIP Transfer - DELF VIP Şoförlü Mercedes Vito" fill className="object-cover brightness-[0.4]" priority />
         </div>
 
         <div className="relative z-10 w-full px-4 flex flex-col items-center">
