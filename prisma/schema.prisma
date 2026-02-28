@@ -63,6 +63,34 @@ model Reservation {
   status      String   @default("new") // 'new' | 'confirmed' | 'cancelled'
 }
 
+// 5. Turlar & Gezi Paketleri
+model Tour {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+
+  title           String
+  location        String
+  image           String
+  duration        String            // Görüntü: "10 Saat (Araç Tahsis)"
+  rating          String   @default("5.0")
+  priceUsd        Float
+  tags            String            // Virgülle ayrılmış: "Şoförlü Araç,Günlük,Transfer"
+
+  // Checkout parametreleri
+  bookingType     String   @default("transfer")  // "hourly" | "transfer"
+  bookingDuration String   @default("")          // Saatlik için: "10 Saat"
+  pickupAddr      String
+  pickupName      String
+  dropoffAddr     String
+  dropoffName     String
+  vehicle         String   @default("Mercedes-Benz Vito VIP")
+  passengers      String   @default("1")
+  roundTrip       Boolean  @default(false)
+
+  isActive        Boolean  @default(true)
+  order           Int      @default(0)
+}
+
 // 4. Çarpanlar (Zaten yapmıştık)
 model RateMultipliers {
   id   Int   @id @default(1)

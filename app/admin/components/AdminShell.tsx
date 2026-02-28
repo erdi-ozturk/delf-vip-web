@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, MapPin, Car, ClipboardList, LogOut } from "lucide-react";
+import { LayoutDashboard, MapPin, Car, ClipboardList, LogOut, Map } from "lucide-react";
 
 const navItems = [
   { href: "/admin",              label: "Genel Bakış",    icon: LayoutDashboard, exact: true },
   { href: "/admin/reservations", label: "Rezervasyonlar", icon: ClipboardList },
   { href: "/admin/routes",       label: "Sabit Rotalar",  icon: MapPin },
   { href: "/admin/vehicles",     label: "Araç Filosu",    icon: Car },
+  { href: "/admin/tours",        label: "Turlar",         icon: Map },
 ];
 
 export default function AdminShell({ children }: { children: React.ReactNode }) {
@@ -52,6 +53,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
 
         <div className="p-3 border-t border-slate-800">
           <button
+            type="button"
             onClick={handleLogout}
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-400 hover:text-red-400 hover:bg-slate-800 transition-all"
           >
